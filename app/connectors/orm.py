@@ -6,8 +6,6 @@ from typing import Any, Type, Union
 
 from app.models.stores.base import BaseObject
 from app.models.stores.entry import Entry, EntryORM
-from app.models.stores.inference import Inference, InferenceORM
-from app.models.stores.user import User, UserORM
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -34,10 +32,10 @@ class Orm:
         match model:
             case _ if isinstance(model, Entry):
                 orm_models = [EntryORM(**model.model_dump()) for model in models]
-            case _ if isinstance(model, Inference):
-                orm_models = [InferenceORM(**model.model_dump()) for model in models]
-            case _ if isinstance(model, User):
-                orm_models = [UserORM(**model.model_dump()) for model in models]
+            # case _ if isinstance(model, Inference):
+            #     orm_models = [InferenceORM(**model.model_dump()) for model in models]
+            # case _ if isinstance(model, User):
+            #     orm_models = [UserORM(**model.model_dump()) for model in models]
             case _:
                 raise ValueError(f"Model type {type(model)} not supported")
             
@@ -97,10 +95,10 @@ class Orm:
         match result:
             case _ if isinstance(result, EntryORM):
                 return [Entry.model_validate(entry) for entry in results]
-            case _ if isinstance(result, InferenceORM):
-                return [Inference.model_validate(inference) for inference in results]
-            case _ if isinstance(result, UserORM):
-                return [User.model_validate(user) for user in results]
+            # case _ if isinstance(result, InferenceORM):
+            #     return [Inference.model_validate(inference) for inference in results]
+            # case _ if isinstance(result, UserORM):
+            #     return [User.model_validate(user) for user in results]
             case _:
                 raise ValueError(f"Model type {type(model)} not supported")
     

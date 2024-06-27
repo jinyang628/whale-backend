@@ -20,12 +20,12 @@ class EntryORM(Base):
     
 class Entry(BaseObject):
     version: int
-    application: str
+    application: list[dict]
 
     @classmethod
     def local(
         cls,
-        application: str,
+        application: list[dict],
     ):
         return Entry(
             id=generate_identifier(Entry.generate_id(
@@ -44,5 +44,5 @@ class Entry(BaseObject):
         return cls(
             id=sql_value_to_typed_value(dict=kwargs, key="id", type=str),
             version=sql_value_to_typed_value(dict=kwargs, key="version", type=int),
-            application=sql_value_to_typed_value(dict=kwargs, key="url", type=str),
+            application=sql_value_to_typed_value(dict=kwargs, key="url", type=list[dict]),
         )

@@ -22,9 +22,9 @@ def sql_value_to_typed_value(
         return bool(value)
     elif type is float:
         return float(value)
-    elif type is List[str]:
+    elif type is list[str]:
         return [str(v) for v in value.split(",")]
-    elif type is List[int]:
+    elif type is list[int]:
         return [int(v) for v in value.split(",")]
     else:
         raise ValueError(f"Unknown type: {type(value)}")

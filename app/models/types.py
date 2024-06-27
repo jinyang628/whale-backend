@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-class EntryInput(BaseModel):
-    application: str
+class EntryRequest(BaseModel):
+    application: list[dict]
 
     class Config:
         extra = "forbid"

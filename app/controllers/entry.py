@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from app.exceptions.exception import (DatabaseError, PipelineError,
                                       UsageLimitExceededError)
-from app.models.types import EntryInput, EntryResponse
+from app.models.types import EntryRequest, EntryResponse
 from app.services.entry import EntryService
 
 log = logging.getLogger(__name__)
@@ -24,8 +24,9 @@ class EntryController:
 
         router = self.router
 
-        @router.post("/{application}")
-        async def post(input: EntryInput) -> JSONResponse:
+        @router.post("")
+        async def post(input: EntryRequest) -> JSONResponse:
+            print(input)
             try:
                 response: str = await self.service.post(
                     input=input

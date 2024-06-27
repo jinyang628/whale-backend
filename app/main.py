@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.controllers.message import MessageController
-from app.services.message import MessageService
+from app.controllers.entry import EntryController
+from app.services.entry import EntryService
 
 app = FastAPI()
 
@@ -16,9 +16,9 @@ app.add_middleware(
 )
 
 
-def get_message_controller_router():
-    service = MessageService()
-    return MessageController(service=service).router
+def get_entry_controller_router():
+    service = EntryService()
+    return EntryController(service=service).router
 
 
-app.include_router(get_message_controller_router(), tags=["message"], prefix="/message")
+app.include_router(get_entry_controller_router(), tags=["entry"], prefix="/entry")

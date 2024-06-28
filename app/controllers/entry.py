@@ -26,13 +26,12 @@ class EntryController:
 
         @router.post("")
         async def post(input: EntryRequest) -> JSONResponse:
-            print(input)
             try:
-                response: str = await self.service.post(
+                response: EntryResponse = await self.service.post(
                     input=input
                 )
                 return JSONResponse(
-                    status_code=200, content=response
+                    status_code=200, content=response.model_dump()
                 )
             except DatabaseError as e:
                 log.error("Database error: %s", str(e))

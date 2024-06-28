@@ -5,7 +5,7 @@ from dotenv import find_dotenv, load_dotenv
 
 from app.connectors.orm import Orm
 from app.models.stores.entry import Entry
-from app.models.types import EntryRequest
+from app.models.types import EntryRequest, EntryResponse
 
 log = logging.getLogger(__name__)
 
@@ -15,12 +15,12 @@ TURSO_DB_AUTH_TOKEN = os.environ.get("TURSO_DB_AUTH_TOKEN")
 
 class EntryService:
     
-    async def post(self, input: EntryRequest) -> str:
+    async def post(self, input: EntryRequest) -> EntryResponse:
         """Inserts the entry into the entry table."""
         entry = Entry.local(application=input.application)
         orm = Orm(url=TURSO_DB_URL, auth_token=TURSO_DB_AUTH_TOKEN)
         orm.insert(models=[entry])
-        return entry.id
+        return EntryResponse(id=entry.id)
 
     ###
     ### Main pipeline logic

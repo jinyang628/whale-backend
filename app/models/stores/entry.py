@@ -1,3 +1,4 @@
+import json
 from app.models.stores.base import BaseObject
 from app.models.utils import generate_identifier, sql_value_to_typed_value
 from sqlalchemy import Column, Integer, String, DateTime
@@ -20,7 +21,7 @@ class EntryORM(Base):
     
 class Entry(BaseObject):
     version: int
-    application: list[dict]
+    application: str
 
     @classmethod
     def local(
@@ -33,8 +34,10 @@ class Entry(BaseObject):
                 application=application
             )),
             version=ENTRY_VERSION,
-            application=application
+            application=json.dumps(application)
         )
+        
+
 
     @classmethod
     def remote(
@@ -44,5 +47,5 @@ class Entry(BaseObject):
         return cls(
             id=sql_value_to_typed_value(dict=kwargs, key="id", type=str),
             version=sql_value_to_typed_value(dict=kwargs, key="version", type=int),
-            application=sql_value_to_typed_value(dict=kwargs, key="url", type=list[dict]),
+            application=sql_value_to_typed_value(dict=kwargs, key="url", type=str),
         )

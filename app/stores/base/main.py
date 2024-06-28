@@ -9,8 +9,23 @@ log = logging.getLogger(__name__)
 
 def main():
     sql = """
-    DROP TABLE IF EXISTS entry;
-    """
+CREATE TRIGGER entry_delete
+AFTER
+    DELETE ON entry FOR EACH ROW 
+    BEGIN
+VALUES
+    (
+        'entry',
+        OLD.id,
+        json_object(
+            'version', OLD.version,
+            'application', OLD.application
+        ),
+        'DELETE'
+    );
+
+END;
+"""
     obj_store = ObjectStore(table_name="entry")
     obj_store.execute(
         sql=sql

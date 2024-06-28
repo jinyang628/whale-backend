@@ -19,6 +19,7 @@ VALUES
         OLD.id,
         json_object(
             'version', OLD.version,
+            'name', OLD.name,
             'application', OLD.application
         ),
         'DELETE'

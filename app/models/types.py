@@ -1,13 +1,13 @@
 from pydantic import BaseModel
 
-class EntryRequest(BaseModel):
+class ApplicationRequest(BaseModel):
     name: str
-    application: list[dict]
+    tables: list[dict]
 
     class Config:
         extra = "forbid"
         
-class EntryResponse(BaseModel):
+class ApplicationResponse(BaseModel):
     id: str
     
     class Config:

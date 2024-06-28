@@ -10,36 +10,36 @@ Base = declarative_base()
 # Update this version accordingly
 ENTRY_VERSION: int = 1
 
-class EntryORM(Base):
-    __tablename__ = "entry"
+class ApplicationORM(Base):
+    __tablename__ = "application"
     
     id = Column(String, primary_key=True)
     version = Column(Integer, nullable=False)
     name = Column(String, nullable=False)
-    application = Column(String, nullable=False)
+    tables = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False, default=func.now())  # Automatically use the current timestamp of the database server upon creation
     updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())  # Automatically use the current timestamp of the database server upon creation and update
     
-class Entry(BaseObject):
+class Application(BaseObject):
     version: int
     name: str
-    application: str
+    tables: str
 
     @classmethod
     def local(
         cls,
         name: str,
-        application: list[dict],
+        tables: list[dict],
     ):
-        return Entry(
-            id=generate_identifier(Entry.generate_id(
+        return Application(
+            id=generate_identifier(Application.generate_id(
                 version=ENTRY_VERSION, 
                 name=name,
-                application=application
+                tables=tables
             )),
             version=ENTRY_VERSION,
             name=name,
-            application=json.dumps(application)
+            tables=json.dumps(tables),
         )
         
 
@@ -53,5 +53,5 @@ class Entry(BaseObject):
             id=sql_value_to_typed_value(dict=kwargs, key="id", type=str),
             version=sql_value_to_typed_value(dict=kwargs, key="version", type=int),
             name=sql_value_to_typed_value(dict=kwargs, key="name", type=str),
-            application=sql_value_to_typed_value(dict=kwargs, key="url", type=str),
+            tables=sql_value_to_typed_value(dict=kwargs, key="tables", type=str),
         )

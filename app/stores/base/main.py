@@ -9,25 +9,24 @@ log = logging.getLogger(__name__)
 
 def main():
     sql = """
-CREATE TRIGGER entry_delete
+CREATE TRIGGER application_delete
 AFTER
-    DELETE ON entry FOR EACH ROW 
+    DELETE ON application FOR EACH ROW 
     BEGIN
 VALUES
     (
-        'entry',
+        'application',
         OLD.id,
         json_object(
             'version', OLD.version,
             'name', OLD.name,
-            'application', OLD.application
+            'tables', OLD.tables
         ),
         'DELETE'
     );
 
-END;
-"""
-    obj_store = ObjectStore(table_name="entry")
+END;"""
+    obj_store = ObjectStore(table_name="application")
     obj_store.execute(
         sql=sql
     )

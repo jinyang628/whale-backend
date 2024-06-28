@@ -5,7 +5,7 @@ import logging
 from typing import Any, Type, Union
 
 from app.models.stores.base import BaseObject
-from app.models.stores.entry import Entry, EntryORM
+from app.models.stores.application import Application, ApplicationORM
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -30,8 +30,8 @@ class Orm:
         model: BaseObject = models[0]
         orm_models: list[Type[DeclarativeMeta]] = []
         match model:
-            case _ if isinstance(model, Entry):
-                orm_models = [EntryORM(**model.model_dump()) for model in models]
+            case _ if isinstance(model, Application):
+                orm_models = [ApplicationORM(**model.model_dump()) for model in models]
             # case _ if isinstance(model, Inference):
             #     orm_models = [InferenceORM(**model.model_dump()) for model in models]
             # case _ if isinstance(model, User):
@@ -93,8 +93,8 @@ class Orm:
         
         result: Type[DeclarativeMeta] = results[0]
         match result:
-            case _ if isinstance(result, EntryORM):
-                return [Entry.model_validate(entry) for entry in results]
+            case _ if isinstance(result, ApplicationORM):
+                return [Application.model_validate(entry) for entry in results]
             # case _ if isinstance(result, InferenceORM):
             #     return [Inference.model_validate(inference) for inference in results]
             # case _ if isinstance(result, UserORM):

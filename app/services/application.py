@@ -4,8 +4,8 @@ import os
 from dotenv import find_dotenv, load_dotenv
 
 from app.connectors.orm import Orm
-from app.models.stores.entry import Entry
-from app.models.types import EntryRequest, EntryResponse, SelectRequest
+from app.models.stores.application import Application
+from app.models.types import ApplicationRequest, ApplicationResponse, SelectRequest
 
 log = logging.getLogger(__name__)
 
@@ -13,24 +13,23 @@ load_dotenv(find_dotenv(filename=".env"))
 TURSO_DB_URL = os.environ.get("TURSO_DB_URL")
 TURSO_DB_AUTH_TOKEN = os.environ.get("TURSO_DB_AUTH_TOKEN")
 
-class EntryService:
+class ApplicationService:
     
-    async def post(self, input: EntryRequest) -> EntryResponse:
-        """Inserts the entry into the entry table."""
-        entry = Entry.local(
+    async def post(self, input: ApplicationRequest) -> ApplicationResponse:
+        """Inserts the entry into the application table."""
+        application = Application.local(
             name=input.name,
-            application=input.application
+            tables=input.tables
         )
         orm = Orm(url=TURSO_DB_URL, auth_token=TURSO_DB_AUTH_TOKEN)
-        orm.insert(models=[entry])
-        return EntryResponse(id=entry.id)
+        orm.insert(models=[application])
+        return ApplicationResponse(id=application.id)
     
     async def select(self, input: SelectRequest) -> bool:
-        """Selects the entry from the entry table."""
+        """Selects the entry from the application table."""
         orm = Orm(url=TURSO_DB_URL, auth_token=TURSO_DB_AUTH_TOKEN)
-        entry = orm.get(model=Entry, id=input.id)
-        print(entry)
-        return bool(entry)
+        application = orm.get(model=Application, id=input.id)
+        return bool(application)
 
     ###
     ### Main pipeline logic

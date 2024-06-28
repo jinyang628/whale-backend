@@ -1,62 +1,62 @@
-DROP TABLE IF EXISTS entry;
+DROP TABLE IF EXISTS application;
 
-DROP TRIGGER IF EXISTS entry_update_timestamp;
+DROP TRIGGER IF EXISTS application_update_timestamp;
 
-DROP TRIGGER IF EXISTS entry_insert;
+DROP TRIGGER IF EXISTS application_insert;
 
-DROP TRIGGER IF EXISTS entry_update;
+DROP TRIGGER IF EXISTS application_update;
 
-DROP TRIGGER IF EXISTS entry_delete;
+DROP TRIGGER IF EXISTS application_delete;
 
-CREATE TABLE entry (
+CREATE TABLE application (
     id TEXT PRIMARY KEY,
     version INTEGER NOT NULL,
     name TEXT NOT NULL,
-    application TEXT NOT NULL,  
+    tables TEXT NOT NULL,  
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE(id),
     CHECK(version <> ''),
-    CHECK(application <> '')
+    CHECK(tables <> '')
 )
 
-CREATE TRIGGER entry_insert
+CREATE TRIGGER application_insert
 AFTER
 INSERT
-    ON entry FOR EACH ROW BEGIN
+    ON application FOR EACH ROW BEGIN
 VALUES
     (
-        'entry',
+        'application',
         NEW.id,
         json_object(
             'version', NEW.version,
             'name', NEW.name,
-            'application', NEW.application
+            'tables', NEW.tables
         ),
         'INSERT'
     );
 
 END;
 
---- Trigger on Entry Update
-CREATE TRIGGER entry_update
+--- Trigger on Application Update
+CREATE TRIGGER application_update
 AFTER
 UPDATE
-    ON entry FOR EACH ROW BEGIN
+    ON application FOR EACH ROW BEGIN
 VALUES
     (
-        'entry',
+        'application',
         NEW.id,
         json_object(
             'version', NEW.version,
             'name', NEW.name,
-            'application', NEW.application
+            'tables', NEW.tables
         ),
         'UPDATE'
     );
 
 UPDATE
-    entry
+    application
 SET
     updated_at = CURRENT_TIMESTAMP
 WHERE
@@ -64,19 +64,19 @@ WHERE
 
 END;
 
---- Trigger on Entry Delete
-CREATE TRIGGER entry_delete
+--- Trigger on Application Delete
+CREATE TRIGGER application_delete
 AFTER
-    DELETE ON entry FOR EACH ROW 
+    DELETE ON application FOR EACH ROW 
     BEGIN
 VALUES
     (
-        'entry',
+        'application',
         OLD.id,
         json_object(
             'version', OLD.version,
             'name', OLD.name,
-            'application', OLD.application
+            'tables', OLD.tables
         ),
         'DELETE'
     );

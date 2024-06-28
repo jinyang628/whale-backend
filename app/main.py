@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.controllers.entry import EntryController
-from app.services.entry import EntryService
+from app.controllers.application import EntryController
+from app.services.application import ApplicationService
 
 app = FastAPI()
 
@@ -16,9 +16,9 @@ app.add_middleware(
 )
 
 
-def get_entry_controller_router():
-    service = EntryService()
+def get_application_controller_router():
+    service = ApplicationService()
     return EntryController(service=service).router
 
 
-app.include_router(get_entry_controller_router(), tags=["entry"], prefix="/entry")
+app.include_router(get_application_controller_router(), tags=["application"], prefix="/application")

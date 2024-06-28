@@ -1,11 +1,12 @@
 import logging
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app.exceptions.exception import (DatabaseError)
-from app.models.types import ApplicationRequest, ApplicationResponse, SelectRequest
+from app.models.types import ApplicationRequest, ApplicationResponse, SelectRequest, SelectResponse
 from app.services.application import ApplicationService
 
 log = logging.getLogger(__name__)
@@ -43,19 +44,17 @@ class EntryController:
                 log.error("Unexpected error in applicaion controller.py: %s", str(e))
                 raise HTTPException(status_code=500, detail="An unexpected error occurred") from e            
             
-            
-            
-            
+               
         @router.get("/select")
         async def select(input: SelectRequest) -> JSONResponse:
             try:
-                is_valid_application: bool = await self.service.select(
+                response: Optional[SelectResponse] = await self.service.select(
                     input=input
                 )
-                if not is_valid_application:
+                if not response:
                     return HTTPException(status_code=404, detail="Application not found")
                 return JSONResponse(
-                    status_code=200, content={"message": "Application found"}
+                    status_code=200, content=response.model_dump()
                 )
             except DatabaseError as e:
                 log.error("Database error: %s", str(e))

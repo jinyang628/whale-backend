@@ -18,3 +18,10 @@ class SelectRequest(BaseModel):
     
     class Config:
         extra = "forbid"
+     
+class SelectResponse(BaseModel):
+    name: str
+    
+    class Config:
+        extra = "forbid"   
+        

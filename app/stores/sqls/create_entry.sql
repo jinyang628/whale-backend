@@ -11,6 +11,7 @@ DROP TRIGGER IF EXISTS entry_delete;
 CREATE TABLE entry (
     id TEXT PRIMARY KEY,
     version INTEGER NOT NULL,
+    name TEXT NOT NULL,
     application TEXT NOT NULL,  
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -29,6 +30,7 @@ VALUES
         NEW.id,
         json_object(
             'version', NEW.version,
+            'name', NEW.name,
             'application', NEW.application
         ),
         'INSERT'
@@ -47,6 +49,7 @@ VALUES
         NEW.id,
         json_object(
             'version', NEW.version,
+            'name', NEW.name,
             'application', NEW.application
         ),
         'UPDATE'
@@ -72,6 +75,7 @@ VALUES
         OLD.id,
         json_object(
             'version', OLD.version,
+            'name', OLD.name,
             'application', OLD.application
         ),
         'DELETE'

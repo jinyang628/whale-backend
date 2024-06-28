@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 from app.exceptions.exception import (DatabaseError, PipelineError,
                                       UsageLimitExceededError)
-from app.models.types import EntryRequest, EntryResponse
+from app.models.types import EntryRequest, EntryResponse, SelectRequest
 from app.services.entry import EntryService
 
 log = logging.getLogger(__name__)
@@ -39,3 +39,22 @@ class EntryController:
             except Exception as e:
                 log.error("Unexpected error in entry_controller.py: %s", str(e))
                 raise HTTPException(status_code=500, detail=str(e)) from e
+            
+        @router.get("/select")
+        async def select(input: SelectRequest) -> JSONResponse:
+            try:
+                is_valid_application: bool = await self.service.select(
+                    input=input
+                )
+                if not is_valid_application:
+                    return HTTPException(status_code=404, detail="Application not found")
+                return JSONResponse(
+                    status_code=200, content={"message": "Application found"}
+                )
+            except DatabaseError as e:
+                log.error("Database error: %s", str(e))
+                raise DatabaseError(message=str(e)) from e
+            except Exception as e:
+                log.error("Unexpected error in entry_controller.py: %s", str(e))
+                raise HTTPException(status_code=500, detail=str(e)) from e
+

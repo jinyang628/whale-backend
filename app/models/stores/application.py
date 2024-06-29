@@ -41,8 +41,6 @@ class Application(BaseObject):
             name=name,
             tables=json.dumps(tables),
         )
-        
-
 
     @classmethod
     def remote(

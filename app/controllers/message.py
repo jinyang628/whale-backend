@@ -29,16 +29,9 @@ class MessageController:
         @router.post("")
         async def post(input: PostMessageRequest) -> JSONResponse:
             try:
-                applications: list[Application] = await self.service.get_applications(
+                application_content_lst: list[ApplicationContent] = await self.service.get_application_content_lst(
                     application_ids=input.application_ids 
                 )
-                application_content_lst: list[ApplicationContent] = [
-                    ApplicationContent(
-                        name=application.name,
-                        tables=application.tables
-                    )    
-                    for application in applications
-                ]
                 response: PostMessageResponse = infer(
                     input=InferenceRequest(
                         applications=application_content_lst,

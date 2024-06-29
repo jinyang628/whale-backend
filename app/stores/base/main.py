@@ -3,34 +3,20 @@
 import logging
 
 from app.stores.base.object import ObjectStore
+from app.stores.sqls.template import generate_sql_script
 
 log = logging.getLogger(__name__)
 
 
-def main():
-    sql = """
-CREATE TRIGGER application_delete
-AFTER
-    DELETE ON application FOR EACH ROW 
-    BEGIN
-VALUES
-    (
-        'application',
-        OLD.id,
-        json_object(
-            'version', OLD.version,
-            'name', OLD.name,
-            'tables', OLD.tables
-        ),
-        'DELETE'
-    );
-
-END;"""
-    obj_store = ObjectStore(table_name="application")
-    obj_store.execute(
-        sql=sql
-    )
-
+def main(table_name):
+    obj_store = ObjectStore(table_name=table_name)
+    sql_script = generate_sql_script(table_name=table_name)
+    sql_statements = sql_script.split("##")
+    
+    for statement in sql_statements:
+        # Skip empty statements
+        if statement.strip():
+            obj_store.execute(sql=statement)
 
 if __name__ == "__main__":
-    main()
+    main(table_name="test")

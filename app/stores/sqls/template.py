@@ -1,14 +1,16 @@
-DROP TABLE IF EXISTS application;
-
-DROP TRIGGER IF EXISTS application_update_timestamp;
-
-DROP TRIGGER IF EXISTS application_insert;
-
-DROP TRIGGER IF EXISTS application_update;
-
-DROP TRIGGER IF EXISTS application_delete;
-
-CREATE TABLE application (
+def generate_sql_script(table_name):
+    script = f"""
+DROP TABLE IF EXISTS {table_name};
+##
+DROP TRIGGER IF EXISTS {table_name}_update_timestamp;
+##
+DROP TRIGGER IF EXISTS {table_name}_insert;
+##
+DROP TRIGGER IF EXISTS {table_name}_update;
+##
+DROP TRIGGER IF EXISTS {table_name}_delete;
+##
+CREATE TABLE {table_name} (
     id TEXT PRIMARY KEY,
     version INTEGER NOT NULL,
     name TEXT NOT NULL,
@@ -16,17 +18,18 @@ CREATE TABLE application (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE(id),
+    UNIQUE(name),
     CHECK(version <> ''),
     CHECK(tables <> '')
 )
-
-CREATE TRIGGER application_insert
+##
+CREATE TRIGGER {table_name}_insert
 AFTER
 INSERT
-    ON application FOR EACH ROW BEGIN
+    ON {table_name} FOR EACH ROW BEGIN
 VALUES
     (
-        'application',
+        '{table_name}',
         NEW.id,
         json_object(
             'version', NEW.version,
@@ -37,15 +40,14 @@ VALUES
     );
 
 END;
-
---- Trigger on Application Update
-CREATE TRIGGER application_update
+##
+CREATE TRIGGER {table_name}_update
 AFTER
 UPDATE
-    ON application FOR EACH ROW BEGIN
+    ON {table_name} FOR EACH ROW BEGIN
 VALUES
     (
-        'application',
+        '{table_name}',
         NEW.id,
         json_object(
             'version', NEW.version,
@@ -56,22 +58,21 @@ VALUES
     );
 
 UPDATE
-    application
+    {table_name}
 SET
     updated_at = CURRENT_TIMESTAMP
 WHERE
     id = OLD.id;
 
 END;
-
---- Trigger on Application Delete
-CREATE TRIGGER application_delete
+##
+CREATE TRIGGER {table_name}_delete
 AFTER
-    DELETE ON application FOR EACH ROW 
+    DELETE ON {table_name} FOR EACH ROW 
     BEGIN
 VALUES
     (
-        'application',
+        '{table_name}',
         OLD.id,
         json_object(
             'version', OLD.version,
@@ -82,3 +83,5 @@ VALUES
     );
 
 END;
+"""
+    return script

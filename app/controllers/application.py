@@ -31,6 +31,9 @@ class ApplicationController:
                 response: PostApplicationResponse = await self.service.post(
                     input=input
                 )
+                await self.service.generate_client_application(
+                    input=input
+                )
                 return JSONResponse(
                     status_code=200, content=response.model_dump()
                 )

@@ -187,7 +187,6 @@ class ObjectStore:
     ) -> libsql_client.Statement:
         _dict = {k: v for k, v in dict.items() if k not in ["created_at", "updated_at"]}
 
-        # TODO: Right now, we are manually processing the string to be compatible with SQLite. This is not the best practice and we should integrate an ORM somehow.
         # Manually construct values string
         values = []
         for v in _dict.values():

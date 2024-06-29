@@ -44,6 +44,7 @@ class Orm:
             session.commit() 
             log.info(f"Inserting {len(models)} into database")
         
+    # TODO: Implement more sophisticated filter conditions -> (A OR B) AND C
     def get(
         self, 
         model: Type[DeclarativeMeta], 
@@ -95,13 +96,68 @@ class Orm:
         match result:
             case _ if isinstance(result, ApplicationORM):
                 return [Application.model_validate(entry) for entry in results]
-            # case _ if isinstance(result, InferenceORM):
-            #     return [Inference.model_validate(inference) for inference in results]
-            # case _ if isinstance(result, UserORM):
-            #     return [User.model_validate(user) for user in results]
             case _:
                 raise ValueError(f"Model type {type(model)} not supported")
     
+    # TODO: Implement more sophisticated filter conditions -> (A OR B) AND C
+    def delete(
+        self, 
+        model: Type[DeclarativeMeta], 
+        filters: dict[str, Union[list, str]], 
+        is_and: bool = True
+    ) -> int:
+        """Deletes entries from the specified table based on the filters provided.
+
+        Args:
+            model (Type[DeclarativeMeta]): The SQLAlchemy model to delete data of.
+            filters (dict): The filters to apply to the query.
+            is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
+
+        Returns:
+            int: The number of rows deleted.
+        """
+        delete_count: int = 0
+        with Session(self.engine) as session:
+            if filters:
+                condition = and_ if is_and else or_
+                delete_query = delete(model).where(condition(*[getattr(model, key) == value for key, value in filters.items()]))
+                result = session.execute(delete_query)
+                session.commit()
+                delete_count = result.rowcount
+        log.info(f"Deleting {delete_count} rows from database")
+        return delete_count 
+    
+    # TODO: Implement more sophisticated filter conditions -> (A OR B) AND C
+    def update(
+        self, 
+        model: Type[DeclarativeMeta], 
+        filters: dict[str, Union[list, str]], 
+        updates: dict, 
+        is_and: bool = True
+    ) -> int:
+        """Updates entries in the specified table based on the filters provided.
+
+        Args:
+            model (Type[DeclarativeMeta]): The SQLAlchemy model to update data of.
+            filters (dict): The filters to apply to the query.
+            updates (dict): The updates to apply to the target rows.
+            is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
+
+        Returns:
+            int: The number of rows updated
+        """
+        update_count: int = 0
+        with Session(self.engine) as session:
+            condition = and_ if is_and else or_
+            query_filter = condition(*[getattr(model, key) == value for key, value in filters.items()])
+            update_stmt = update(model).where(query_filter).values(**updates)
+            result = session.execute(update_stmt)
+            session.commit()
+            update_count = result.rowcount
+        log.info(f"Updating {update_count} rows in database")
+        return update_count
+    
+    ### Miscellaneous ###
     def get_column(self, model: Type[DeclarativeMeta], column: str, filters: dict, is_and: bool = True, batch_size: int = 6500) -> list[Any]:
         """Fetches specific columns from the specified table based on the filters provided.
 
@@ -141,47 +197,21 @@ class Orm:
                 offset += batch_size
         return results 
     
-    def delete(self, model: Type[DeclarativeMeta], filters: dict, is_and: bool = True) -> int:
-        """Deletes entries from the specified table based on the filters provided.
 
-        Args:
-            model (Type[DeclarativeMeta]): The SQLAlchemy model to delete data of.
-            filters (dict): The filters to apply to the query.
-            is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
-
-        Returns:
-            int: The number of rows deleted.
-        """
-        delete_count: int = 0
-        with Session(self.engine) as session:
-            if filters:
-                condition = and_ if is_and else or_
-                delete_query = delete(model).where(condition(*[getattr(model, key) == value for key, value in filters.items()]))
-                result = session.execute(delete_query)
-                session.commit()
-                delete_count = result.rowcount
-        log.info(f"Deleting {delete_count} rows from database")
-        return delete_count 
+# TODO: Integrate this? But probably better to have a pydantic model to handle this. Boolean clause class?
+def _build_filter_condition(self, model: Type[DeclarativeMeta], filters: dict[str, Any]):
+    """Recursively builds complex filter conditions."""
+    conditions = []
+    for key, value in filters.items():
+        if key.lower() == 'or':
+            conditions.append(or_(*[_build_filter_condition(model, sub_filter) for sub_filter in value]))
+        elif key.lower() == 'and':
+            conditions.append(and_(*[_build_filter_condition(model, sub_filter) for sub_filter in value]))
+        else:
+            attribute = getattr(model, key)
+            if isinstance(value, list):
+                conditions.append(attribute.in_(value))
+            else:
+                conditions.append(attribute == value)
     
-    def update(self, model: Type[DeclarativeMeta], filters: dict, updates: dict, is_and: bool = True) -> int:
-        """Updates entries in the specified table based on the filters provided.
-
-        Args:
-            model (Type[DeclarativeMeta]): The SQLAlchemy model to update data of.
-            filters (dict): The filters to apply to the query.
-            updates (dict): The updates to apply to the target rows.
-            is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
-
-        Returns:
-            int: The number of rows updated
-        """
-        update_count: int = 0
-        with Session(self.engine) as session:
-            condition = and_ if is_and else or_
-            query_filter = condition(*[getattr(model, key) == value for key, value in filters.items()])
-            update_stmt = update(model).where(query_filter).values(**updates)
-            result = session.execute(update_stmt)
-            session.commit()
-            update_count = result.rowcount
-        log.info(f"Updating {update_count} rows in database")
-        return update_count
+    return and_(*conditions) if len(conditions) > 1 else conditions[0]

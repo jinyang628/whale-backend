@@ -1,11 +1,8 @@
 
 from pydantic import BaseModel
+from app.models.application import ApplicationContent
 
 from app.models.message import Message
-    
-class ApplicationContent(BaseModel):
-    name: str
-    tables: str
     
 class InferenceRequest(BaseModel):
     applications: list[ApplicationContent]

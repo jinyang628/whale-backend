@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 
@@ -20,7 +21,7 @@ class MessageService:
         application_content_lst: list[ApplicationContent] = [
             ApplicationContent(
                 name=application.name,
-                tables=application.tables
+                tables=json.loads(application.tables)
             )    
             for application in applications
         ]

@@ -20,12 +20,17 @@ class Table(BaseModel):
     description: Optional[str] = None
     columns: list[Column]
 
-class PostApplicationRequest(BaseModel):
+class ApplicationContent(BaseModel):
     name: str
     tables: list[Table]
-
-    class Config:
+    
+    class Config: 
         extra = "forbid"
+        
+
+    
+class PostApplicationRequest(ApplicationContent):
+    pass
         
 class PostApplicationResponse(BaseModel):
     id: str

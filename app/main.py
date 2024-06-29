@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.controllers.application import EntryController
+from app.controllers.application import ApplicationController
 from app.controllers.message import MessageController
 from app.services.application import ApplicationService
 from app.services.message import MessageService
@@ -20,7 +20,7 @@ app.add_middleware(
 
 def get_application_controller_router():
     service = ApplicationService()
-    return EntryController(service=service).router
+    return ApplicationController(service=service).router
 
 def get_message_controller_router():
     service = MessageService()

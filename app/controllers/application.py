@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app.exceptions.exception import (DatabaseError)
-from app.models.types import ApplicationRequest, ApplicationResponse, SelectRequest, SelectResponse
+from app.models.application import PostApplicationRequest, PostApplicationResponse, SelectApplicationRequest, SelectApplicationResponse
 from app.services.application import ApplicationService
 
 log = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 router = APIRouter()
 
 
-class EntryController:
+class ApplicationController:
 
     def __init__(self, service: ApplicationService):
         self.router = APIRouter()
@@ -26,9 +26,9 @@ class EntryController:
         router = self.router
 
         @router.post("")
-        async def post(input: ApplicationRequest) -> JSONResponse:
+        async def post(input: PostApplicationRequest) -> JSONResponse:
             try:
-                response: ApplicationResponse = await self.service.post(
+                response: PostApplicationResponse = await self.service.post(
                     input=input
                 )
                 return JSONResponse(
@@ -46,9 +46,9 @@ class EntryController:
             
                
         @router.get("/select")
-        async def select(input: SelectRequest) -> JSONResponse:
+        async def select(input: SelectApplicationRequest) -> JSONResponse:
             try:
-                response: Optional[SelectResponse] = await self.service.select(
+                response: Optional[SelectApplicationResponse] = await self.service.select(
                     input=input
                 )
                 if not response:

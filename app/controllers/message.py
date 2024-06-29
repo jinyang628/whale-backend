@@ -4,7 +4,10 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
-from app.models.types import MessageRequest, MessageResponse
+from app.api.inference import infer
+from app.models.stores.application import Application
+from app.models.inference import ApplicationContent, InferenceRequest
+from app.models.message import PostMessageRequest, PostMessageResponse
 from app.services.message import MessageService
 
 log = logging.getLogger(__name__)
@@ -24,13 +27,25 @@ class MessageController:
         router = self.router
 
         @router.post("")
-        async def post(input: MessageRequest) -> JSONResponse:
+        async def post(input: PostMessageRequest) -> JSONResponse:
             try:
-                print("message controller.py")
-                print(input)
-                # response: ApplicationResponse = await self.service.post(
-                #     input=input
-                # )
+                applications: list[Application] = await self.service.get_applications(
+                    application_ids=input.application_ids 
+                )
+                application_content_lst: list[ApplicationContent] = [
+                    ApplicationContent(
+                        name=application.name,
+                        tables=application.tables
+                    )    
+                    for application in applications
+                ]
+                response: PostMessageResponse = infer(
+                    input=InferenceRequest(
+                        applications=application_content_lst,
+                        message=input.message,
+                        chat_history=input.chat_history
+                    )
+                )
                 # return JSONResponse(
                 #     status_code=200, content=response.model_dump()
                 # )

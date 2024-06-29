@@ -19,8 +19,8 @@ class ObjectStore:
     ):
         self._table_name = table_name
         self._db_client = TursoConnector(
-            url=os.environ.get("TURSO_DB_URL"),
-            auth_token=os.environ.get("TURSO_DB_AUTH_TOKEN"),
+            url=os.environ.get("TURSO_INTERNAL_DB_URL"),
+            auth_token=os.environ.get("TURSO_INTERNAL_DB_AUTH_TOKEN"),
         )
 
     ####

@@ -11,8 +11,8 @@ from app.models.application import PostApplicationRequest, PostApplicationRespon
 log = logging.getLogger(__name__)
 
 load_dotenv(find_dotenv(filename=".env"))
-TURSO_DB_URL = os.environ.get("TURSO_DB_URL")
-TURSO_DB_AUTH_TOKEN = os.environ.get("TURSO_DB_AUTH_TOKEN")
+TURSO_INTERNAL_DB_URL = os.environ.get("TURSO_INTERNAL_DB_URL")
+TURSO_INTERNAL_DB_AUTH_TOKEN = os.environ.get("TURSO_INTERNAL_DB_AUTH_TOKEN")
 
 class ApplicationService:
     
@@ -22,13 +22,13 @@ class ApplicationService:
             name=input.name,
             tables=input.tables
         )
-        orm = Orm(url=TURSO_DB_URL, auth_token=TURSO_DB_AUTH_TOKEN)
+        orm = Orm(url=TURSO_INTERNAL_DB_URL, auth_token=TURSO_INTERNAL_DB_AUTH_TOKEN)
         orm.insert(models=[application])
         return PostApplicationResponse(id=application.id)
     
     async def select(self, input: SelectApplicationRequest) -> Optional[SelectApplicationResponse]:
         """Selects the entry from the application table."""
-        orm = Orm(url=TURSO_DB_URL, auth_token=TURSO_DB_AUTH_TOKEN)
+        orm = Orm(url=TURSO_INTERNAL_DB_URL, auth_token=TURSO_INTERNAL_DB_AUTH_TOKEN)
         result: list[Application] = orm.get(model=ApplicationORM, filters={"id": input.id})
         if len(result) != 1:
             return None

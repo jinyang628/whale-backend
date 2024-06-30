@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from app.api.inference import infer
 from app.models.stores.application import Application
-from app.models.inference import ApplicationContent, InferenceRequest
+from app.models.inference import ApplicationContent, InferenceRequest, InferenceResponse
 from app.models.message import PostMessageRequest, PostMessageResponse
 from app.services.message import MessageService
 
@@ -32,12 +32,15 @@ class MessageController:
                 application_content_lst: list[ApplicationContent] = await self.service.get_application_content_lst(
                     application_ids=input.application_ids 
                 )
-                response: PostMessageResponse = infer(
+                inference_response: InferenceResponse = infer(
                     input=InferenceRequest(
                         applications=application_content_lst,
                         message=input.message,
                         chat_history=input.chat_history
                     )
+                )
+                result: PostMessageResponse = await self.service.execute_inference_response(
+                    inference_response=inference_response
                 )
                 # return JSONResponse(
                 #     status_code=200, content=response.model_dump()

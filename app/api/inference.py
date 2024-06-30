@@ -18,8 +18,6 @@ SERVICE_ENDPOINT = "inference"
 
 def infer(input: InferenceRequest) -> InferenceResponse:
     try:
-        print("error arrives here")
-        print(input)
         response = requests.post(
             f"{BASE_URL}/{SERVICE_ENDPOINT}", json=input.model_dump()
         )

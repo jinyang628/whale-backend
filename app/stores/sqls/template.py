@@ -1,15 +1,12 @@
 from app.models.application import Column, DataType
 
-# TODO: Think about whether we want to just unify the DataType as this on the client side too
-
+# TODO: The mapping here is important because not every database has the same types. And it doesn't seem like a good idea that we update valid SDK data types everytime we change a DB? The mapping here represents what is valid for SQLite, which will change IF we ever change databases
 def get_sql_type(data_type: DataType) -> str:
     sql_type_map = {
         DataType.STRING: "TEXT",
         DataType.INTEGER: "INTEGER",
         DataType.FLOAT: "REAL",
-        DataType.BOOLEAN: "INTEGER",
-        DataType.DATE: "DATE",
-        DataType.DATETIME: "TIMESTAMP"
+        DataType.BOOLEAN: "BOOLEAN",
     }
     return sql_type_map[data_type]
 

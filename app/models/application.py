@@ -7,8 +7,6 @@ class DataType(StrEnum):
     INTEGER = "integer"
     FLOAT = "float"
     BOOLEAN = "boolean"
-    DATE = "date"
-    DATETIME = "datetime"
     
 class Column(BaseModel):
     name: str

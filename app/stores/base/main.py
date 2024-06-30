@@ -13,3 +13,6 @@ def generate_client_table(table_name: str, columns: list[Column], db_url: str, d
     for statement in sql_statements:
         if statement.strip():
             obj_store.execute(sql=statement)
+            
+            
+

@@ -44,7 +44,7 @@ class ApplicationController:
                 log.error("Database error: %s", str(e))
                 raise HTTPException(status_code=500, detail="Database error") from e
             except Exception as e:
-                log.error("Unexpected error in applicaion controller.py: %s", str(e))
+                log.error("Unexpected error in application controller.py: %s", str(e))
                 raise HTTPException(status_code=500, detail="An unexpected error occurred") from e            
             
                

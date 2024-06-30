@@ -19,30 +19,19 @@ class Orm:
         dbUrl = f"sqlite+{url}/?authToken={auth_token}&secure=true"
         self.engine = create_engine(dbUrl, connect_args={'check_same_thread': False}, echo=True)
         
-    def insert(self, models: list[BaseObject]) -> Any:
+    def insert(self, model: Type[DeclarativeMeta], data: list[dict[str, Any]]) -> Any:
         """
         Inserts a list of model instances into the database.
 
         Parameters:
         models (list[FishBaseObject]): A list of FishBaseObject to be inserted.
         """
-        # Assumes that all models in the list are of the same type. We can implement more guardrails if we want, but that will slow down the process for large insertions.
-        model: BaseObject = models[0]
-        orm_models: list[Type[DeclarativeMeta]] = []
-        match model:
-            case _ if isinstance(model, Application):
-                orm_models = [ApplicationORM(**model.model_dump()) for model in models]
-            # case _ if isinstance(model, Inference):
-            #     orm_models = [InferenceORM(**model.model_dump()) for model in models]
-            # case _ if isinstance(model, User):
-            #     orm_models = [UserORM(**model.model_dump()) for model in models]
-            case _:
-                raise ValueError(f"Model type {type(model)} not supported")
-            
+        orm_instances = [model(**item) for item in data]
+        
         with Session(self.engine) as session:
-            session.add_all(orm_models)
-            session.commit() 
-            log.info(f"Inserting {len(models)} into database")
+            session.add_all(orm_instances)
+            session.commit()
+            log.info(f"Inserted {len(data)} rows into {model.__tablename__}")
         
     # TODO: Implement more sophisticated filter conditions -> (A OR B) AND C
     def get(
@@ -196,7 +185,6 @@ class Orm:
                 results.extend(batch_results)
                 offset += batch_size
         return results 
-    
 
 # TODO: Integrate this? But probably better to have a pydantic model to handle this. Boolean clause class?
 def _build_filter_condition(self, model: Type[DeclarativeMeta], filters: dict[str, Any]):

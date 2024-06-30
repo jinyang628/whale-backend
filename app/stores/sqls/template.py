@@ -12,7 +12,6 @@ def get_sql_type(data_type: DataType) -> str:
 
 # TODO: Implement some sort of versioning system so clients can update their tables without breaking the application/dropping the entire table
 # TODO: Implement unique constraints that can be controlled by clients when creating applications
-
 def generate_sql_script(table_name: str, columns: list[Column]):
     
     # Generate column definitions
@@ -40,8 +39,7 @@ DROP TRIGGER IF EXISTS {table_name}_update;
 DROP TRIGGER IF EXISTS {table_name}_delete;
 ##
 CREATE TABLE {table_name} (
-    id TEXT PRIMARY KEY,
-{column_defs_str},
+    {column_defs_str},
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE(id)

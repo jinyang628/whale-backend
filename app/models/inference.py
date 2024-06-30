@@ -19,6 +19,8 @@ class InferenceRequest(BaseModel):
     
 class HttpMethodResponse(BaseModel):
     http_method: HttpMethod
+    application: ApplicationContent
+    table_name: str
     inserted_row: Optional[dict[str, Any]] = None
     filter_conditions: Optional[list[dict[str, Any]]] = None
     updated_data: Optional[list[dict[str, Any]]] = None

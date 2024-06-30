@@ -27,7 +27,7 @@ class ApplicationService:
             tables=tables_dump
         )
         orm = Orm(url=TURSO_INTERNAL_DB_URL, auth_token=TURSO_INTERNAL_DB_AUTH_TOKEN)
-        orm.insert(models=[application])
+        orm.insert(model=ApplicationORM, data=[application.model_dump()])
         return PostApplicationResponse(id=application.id)
     
     async def generate_client_application(self, input: PostApplicationRequest) -> PostApplicationResponse:

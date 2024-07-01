@@ -1,4 +1,5 @@
 from enum import StrEnum
+import uuid
 from pydantic import BaseModel
 from typing import Optional
 
@@ -45,9 +46,13 @@ class PostApplicationRequest(ApplicationContent):
         
 class PostApplicationResponse(BaseModel):
     id: str
-    
+
     class Config:
         extra = "forbid"
+
+    @classmethod
+    def from_uuid(cls, id: uuid.UUID):
+        return cls(id=str(id))
         
 class SelectApplicationRequest(BaseModel):
     id: str

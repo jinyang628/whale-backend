@@ -26,7 +26,7 @@ class ApplicationService:
         )
         orm = Orm(url=INTERNAL_DATABASE_URL)
         await orm.insert(model=ApplicationORM, data=[application.model_dump()])
-        return PostApplicationResponse(id=application.id)
+        return PostApplicationResponse.from_uuid(application.id)
     
     async def generate_client_application(self, input: PostApplicationRequest) -> PostApplicationResponse:
         """Generates the client application."""

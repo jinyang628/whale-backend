@@ -44,9 +44,10 @@ class ApplicationService:
     async def select(self, input: SelectApplicationRequest) -> Optional[SelectApplicationResponse]:
         """Selects the entry from the application table."""
         orm = Orm(url=INTERNAL_DATABASE_URL)
-        result: list[Application] = orm.get(model=ApplicationORM, filters={"id": input.id})
+        result: list[Application] = await orm.get(model=ApplicationORM, filters={"id": input.id})
         if len(result) != 1:
             return None
+        print(result)
         return SelectApplicationResponse(
             name=result[0].name
         )

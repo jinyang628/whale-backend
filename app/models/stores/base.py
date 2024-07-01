@@ -2,7 +2,7 @@ from pydantic import BaseModel
 import uuid
 
 class BaseObject(BaseModel):
-    id: str = None
+    id: uuid.UUID = None
     
     class Config:
         orm_mode = True
@@ -11,9 +11,9 @@ class BaseObject(BaseModel):
     @staticmethod
     def generate_id(
         **kwargs,
-    ) -> str:
+    ) -> uuid.UUID:
         for k, v in kwargs.items():
             if v is None:
                 raise Exception(f"Cannot generate id with None value for key {k}")
 
-        return str(uuid.uuid3(uuid.NAMESPACE_DNS, "-".join([str(v) for v in kwargs.values()])))
+        return uuid.uuid3(uuid.NAMESPACE_DNS, "-".join([str(v) for v in kwargs.values()]))

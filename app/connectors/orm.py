@@ -29,7 +29,7 @@ class Orm:
         )
         
         
-    async def insert(self, model: Type[DeclarativeMeta], data: list[dict[str, Any]]) -> Any:
+    async def insert(self, model: Type[DeclarativeMeta], data: list[dict[str, Any]]):
         """
         Inserts a list of model instances into the database.
 
@@ -43,7 +43,7 @@ class Orm:
             log.info(f"Inserted {len(data)} rows into {model.__tablename__}")
         
     # TODO: Implement more sophisticated filter conditions -> (A OR B) AND C
-    def get(
+    async def get(
         self, 
         model: Type[DeclarativeMeta], 
         filters: dict[str, Union[list, str]], 
@@ -63,7 +63,7 @@ class Orm:
         results = []
         offset = 0
         
-        with Session(self.engine) as session:
+        async with self.sessionmaker() as session:
             while True:
                 query = select(model)
                 if filters:
@@ -78,7 +78,8 @@ class Orm:
                     query = query.filter(condition(*conditions))
                 
                 query = query.limit(batch_size).offset(offset)
-                batch_results = session.execute(query).scalars().all()
+                batch_results = await session.execute(query)
+                batch_results = batch_results.scalars().all()  # Add this line
 
                 if not batch_results:
                     break

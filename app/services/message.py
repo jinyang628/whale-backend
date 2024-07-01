@@ -37,7 +37,9 @@ class MessageService:
         return application_content_lst
     
     async def execute_inference_response(self, inference_response: InferenceResponse) -> PostMessageResponse:
+
         orm = Orm(url=TURSO_CLIENT_DB_URL, auth_token=TURSO_CLIENT_DB_AUTH_TOKEN)
+        
         for http_method_response in inference_response.response:
             target_table: Optional[Table] = None
             for table in http_method_response.application.tables:
@@ -45,6 +47,7 @@ class MessageService:
                     target_table = table
             if not target_table:
                 raise ValueError(f"Table {http_method_response.table_name} not found in application {http_method_response.application.name}")
+            
             table_orm_model: Type[DeclarativeMeta] = create_dynamic_orm(
                 table=target_table, 
                 application_name=http_method_response.application.name

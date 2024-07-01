@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, or_, and_, select, delete, update
+from sqlalchemy import create_engine, or_, and_, select, delete, update, event
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 import logging
@@ -18,6 +18,7 @@ class Orm:
     ):
         dbUrl = f"sqlite+{url}/?authToken={auth_token}&secure=true"
         self.engine = create_engine(dbUrl, connect_args={'check_same_thread': False}, echo=True)
+        
         
     def insert(self, model: Type[DeclarativeMeta], data: list[dict[str, Any]]) -> Any:
         """

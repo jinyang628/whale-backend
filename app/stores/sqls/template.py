@@ -13,7 +13,6 @@ def get_sql_type(data_type: DataType) -> str:
 # TODO: Implement some sort of versioning system so clients can update their tables without breaking the application/dropping the entire table
 # TODO: Implement unique constraints that can be controlled by clients when creating applications
 def generate_sql_script(table_name: str, columns: list[Column]):
-    
     # Generate column definitions
     column_defs = []
     json_object_pairs = []
@@ -24,72 +23,80 @@ def generate_sql_script(table_name: str, columns: list[Column]):
         json_object_pairs.append(f"'{col.name}', NEW.{col.name}")
 
     column_defs_str = ",\n".join(column_defs)
-    json_object_str = ",\n            ".join(json_object_pairs)
-    
+    json_object_str = ", ".join(json_object_pairs)
     
     script = f"""
 DROP TABLE IF EXISTS {table_name};
 ##
-DROP TRIGGER IF EXISTS {table_name}_update_timestamp;
+DROP TRIGGER IF EXISTS {table_name}_update_timestamp ON {table_name};
 ##
-DROP TRIGGER IF EXISTS {table_name}_insert;
+DROP TRIGGER IF EXISTS {table_name}_insert ON {table_name};
 ##
-DROP TRIGGER IF EXISTS {table_name}_update;
+DROP TRIGGER IF EXISTS {table_name}_update ON {table_name};
 ##
-DROP TRIGGER IF EXISTS {table_name}_delete;
+DROP TRIGGER IF EXISTS {table_name}_delete ON {table_name};
 ##
 CREATE TABLE {table_name} (
     {column_defs_str},
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     UNIQUE(id)
-)
+);
 ##
-CREATE TRIGGER {table_name}_insert
-AFTER INSERT ON {table_name} FOR EACH ROW
+CREATE OR REPLACE FUNCTION {table_name}_insert_trigger()
+RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO changes (table_name, record_id, data, operation)
     VALUES (
         '{table_name}',
         NEW.id,
-        json_object(
-            {json_object_str}
-        ),
+        json_build_object({json_object_str}),
         'INSERT'
     );
+    RETURN NEW;
 END;
+$$ LANGUAGE plpgsql;
 ##
-CREATE TRIGGER {table_name}_update
-AFTER UPDATE ON {table_name} FOR EACH ROW
+CREATE TRIGGER {table_name}_insert
+AFTER INSERT ON {table_name}
+FOR EACH ROW EXECUTE FUNCTION {table_name}_insert_trigger();
+##
+CREATE OR REPLACE FUNCTION {table_name}_update_trigger()
+RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO changes (table_name, record_id, data, operation)
     VALUES (
         '{table_name}',
         NEW.id,
-        json_object(
-            {json_object_str}
-        ),
+        json_build_object({json_object_str}),
         'UPDATE'
     );
-
-    UPDATE {table_name}
-    SET updated_at = CURRENT_TIMESTAMP
-    WHERE id = OLD.id;
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
 END;
+$$ LANGUAGE plpgsql;
 ##
-CREATE TRIGGER {table_name}_delete
-AFTER DELETE ON {table_name} FOR EACH ROW
+CREATE TRIGGER {table_name}_update
+BEFORE UPDATE ON {table_name}
+FOR EACH ROW EXECUTE FUNCTION {table_name}_update_trigger();
+##
+CREATE OR REPLACE FUNCTION {table_name}_delete_trigger()
+RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO changes (table_name, record_id, data, operation)
     VALUES (
         '{table_name}',
         OLD.id,
-        json_object(
-            {json_object_str.replace('NEW.', 'OLD.')}
-        ),
+        json_build_object({json_object_str.replace('NEW.', 'OLD.')}),
         'DELETE'
     );
+    RETURN OLD;
 END;
+$$ LANGUAGE plpgsql;
+##
+CREATE TRIGGER {table_name}_delete
+AFTER DELETE ON {table_name}
+FOR EACH ROW EXECUTE FUNCTION {table_name}_delete_trigger();
 """
     print(script)
     return script

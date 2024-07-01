@@ -12,10 +12,8 @@ from app.stores.base.main import generate_client_table
 log = logging.getLogger(__name__)
 
 load_dotenv(find_dotenv(filename=".env"))
-TURSO_INTERNAL_DB_URL = os.environ.get("TURSO_INTERNAL_DB_URL")
-TURSO_INTERNAL_DB_AUTH_TOKEN = os.environ.get("TURSO_INTERNAL_DB_AUTH_TOKEN")
-TURSO_CLIENT_DB_URL = os.environ.get("TURSO_CLIENT_DB_URL")
-TURSO_CLIENT_DB_AUTH_TOKEN = os.environ.get("TURSO_CLIENT_DB_AUTH_TOKEN")
+INTERNAL_DATABASE_URL = os.environ.get("INTERNAL_DATABASE_URL")
+EXTERNAL_DATABASE_URL = os.environ.get("EXTERNAL_DATABASE_URL")
 
 class ApplicationService:
     
@@ -26,8 +24,8 @@ class ApplicationService:
             name=input.name,
             tables=tables_dump
         )
-        orm = Orm(url=TURSO_INTERNAL_DB_URL, auth_token=TURSO_INTERNAL_DB_AUTH_TOKEN)
-        orm.insert(model=ApplicationORM, data=[application.model_dump()])
+        orm = Orm(url=INTERNAL_DATABASE_URL)
+        await orm.insert(model=ApplicationORM, data=[application.model_dump()])
         return PostApplicationResponse(id=application.id)
     
     async def generate_client_application(self, input: PostApplicationRequest) -> PostApplicationResponse:
@@ -37,16 +35,15 @@ class ApplicationService:
             table_name = f"{input.name}_{table.name}" 
             # For input of inference, we will GET table description from the internal database, and the table name and columns from the client database
             # For output of inference, we will simply modify the entries in the client database associated with the user's API key
-            generate_client_table(
+            await generate_client_table(
                 table_name=table_name, 
                 columns=table.columns, 
-                db_url=TURSO_CLIENT_DB_URL, 
-                db_auth_token=TURSO_CLIENT_DB_AUTH_TOKEN
+                db_url=EXTERNAL_DATABASE_URL, 
             )
     
     async def select(self, input: SelectApplicationRequest) -> Optional[SelectApplicationResponse]:
         """Selects the entry from the application table."""
-        orm = Orm(url=TURSO_INTERNAL_DB_URL, auth_token=TURSO_INTERNAL_DB_AUTH_TOKEN)
+        orm = Orm(url=INTERNAL_DATABASE_URL)
         result: list[Application] = orm.get(model=ApplicationORM, filters={"id": input.id})
         if len(result) != 1:
             return None

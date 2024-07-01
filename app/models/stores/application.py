@@ -1,24 +1,24 @@
 import json
 from app.models.stores.base import BaseObject
 from app.models.utils import generate_identifier, sql_value_to_typed_value
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import JSON, UUID, Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base 
 from sqlalchemy.sql import func
-
-Base = declarative_base()
 
 # Update this version accordingly
 ENTRY_VERSION: int = 1
 
+Base = declarative_base()
+
 class ApplicationORM(Base):
     __tablename__ = "application"
     
-    id = Column(String, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True)
     version = Column(Integer, nullable=False)
     name = Column(String, nullable=False)
-    tables = Column(String, nullable=False)
-    created_at = Column(DateTime, nullable=False, default=func.now())  # Automatically use the current timestamp of the database server upon creation
-    updated_at = Column(DateTime, nullable=False, default=func.now(), onupdate=func.now())  # Automatically use the current timestamp of the database server upon creation and update
+    tables = Column(JSON, nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=func.now(), onupdate=func.now())
     
 class Application(BaseObject):
     version: int
@@ -32,11 +32,11 @@ class Application(BaseObject):
         tables: list[dict],
     ):
         return Application(
-            id=generate_identifier(Application.generate_id(
+            id=Application.generate_id(
                 version=ENTRY_VERSION, 
                 name=name,
                 tables=tables
-            )),
+            ),
             version=ENTRY_VERSION,
             name=name,
             tables=json.dumps(tables),

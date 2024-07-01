@@ -44,22 +44,6 @@ cp .env.example .env
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 ```
 
-### Install turso CLI
-
-https://docs.turso.tech/quickstart
-
-### For windows users
-You will need windows wsl to run the turso CLI. You can follow the instructions here: https://docs.microsoft.com/en-us/windows/wsl/install
-Perform the turso installation in the wsl terminal.
-
-### Login to turso
-```
-turso auth logout
-turso auth login (make sure u are on the right browser with the right account)
-turso org switch ****YOUR USERNAME****
-turso db list (u should see the correct db)
-```
-
 ### Check style
 
 Run the following command at the root of the repository

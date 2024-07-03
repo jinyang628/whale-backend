@@ -61,7 +61,7 @@ class PostApplicationResponse(BaseModel):
 
 
 class SelectApplicationRequest(BaseModel):
-    id: str
+    name: str
 
     class Config:
         extra = "forbid"

@@ -30,7 +30,7 @@ class MessageController:
         async def post(input: PostMessageRequest) -> JSONResponse:
             try:
                 application_content_lst: list[ApplicationContent] = await self.service.get_application_content_lst(
-                    application_ids=input.application_ids 
+                    application_names=input.application_names 
                 )
                 inference_response: InferenceResponse = infer(
                     input=InferenceRequest(

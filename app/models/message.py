@@ -13,7 +13,7 @@ class Message(BaseModel):
 class PostMessageRequest(BaseModel):
     message: str
     chat_history: list[Message]
-    application_ids: list[str]
+    application_names: list[str]
 
 
 class PostMessageResponse(BaseModel):

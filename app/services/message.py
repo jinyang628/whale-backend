@@ -23,14 +23,12 @@ EXTERNAL_DATABASE_URL = os.environ.get("EXTERNAL_DATABASE_URL")
 # TODO: Abstract the client ORM and internal ORM into the connectors folder (services shouldnt need to load from env in their own files)
 class MessageService:
     async def get_application_content_lst(
-        self, application_ids: list[str]
+        self, application_names: list[str]
     ) -> list[ApplicationContent]:
         orm = Orm(url=INTERNAL_DATABASE_URL)
-        print("error arrives here 1")
         applications: list[Application] = await orm.get(
-            model=ApplicationORM, filters={"id": application_ids}
+            model=ApplicationORM, filters={"name": application_names}
         )
-        print("error arrives here 2")
         application_content_lst: list[ApplicationContent] = []
         for application in applications:
             tables: list[Table] = [

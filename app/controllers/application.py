@@ -51,11 +51,9 @@ class ApplicationController:
         @router.get("/select")
         async def select(input: SelectApplicationRequest) -> JSONResponse:
             try:
-                print("input", input)
                 response: Optional[SelectApplicationResponse] = (
                     await self.service.select(input=input)
                 )
-                print("response", response)
                 if not response:
                     return HTTPException(
                         status_code=404, detail="Application not found"

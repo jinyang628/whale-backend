@@ -52,7 +52,7 @@ class ApplicationService:
         """Selects the entry from the application table."""
         orm = Orm(url=INTERNAL_DATABASE_URL)
         result: list[Application] = await orm.get(
-            model=ApplicationORM, filters={"id": input.id}
+            model=ApplicationORM, filters={"name": input.name}
         )
         if len(result) != 1:
             return None

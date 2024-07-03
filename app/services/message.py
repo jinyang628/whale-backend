@@ -19,48 +19,69 @@ load_dotenv(find_dotenv(filename=".env"))
 INTERNAL_DATABASE_URL = os.environ.get("INTERNAL_DATABASE_URL")
 EXTERNAL_DATABASE_URL = os.environ.get("EXTERNAL_DATABASE_URL")
 
+
 # TODO: Abstract the client ORM and internal ORM into the connectors folder (services shouldnt need to load from env in their own files)
 class MessageService:
-    async def get_application_content_lst(self, application_ids: list[str]) -> list[ApplicationContent]:
-        orm = Orm(url=INTERNAL_DATABASE_URL) 
-        print("error arrives here")
-        applications: list[Application] = await orm.get(model=ApplicationORM, filters={"id": application_ids})
-        print("error arrives here")
+    async def get_application_content_lst(
+        self, application_ids: list[str]
+    ) -> list[ApplicationContent]:
+        orm = Orm(url=INTERNAL_DATABASE_URL)
+        print("error arrives here 1")
+        applications: list[Application] = await orm.get(
+            model=ApplicationORM, filters={"id": application_ids}
+        )
+        print("error arrives here 2")
         application_content_lst: list[ApplicationContent] = []
         for application in applications:
-            tables: list[Table] = [Table.model_validate(table) for table in json.loads(application.tables)]
+            tables: list[Table] = [
+                Table.model_validate(table) for table in json.loads(application.tables)
+            ]
             application_content = ApplicationContent(
-                name=application.name,
-                tables=tables
+                name=application.name, tables=tables
             )
             application_content_lst.append(application_content)
         return application_content_lst
-    
-    async def execute_inference_response(self, inference_response: InferenceResponse) -> PostMessageResponse:
+
+    async def execute_inference_response(
+        self, inference_response: InferenceResponse
+    ) -> PostMessageResponse:
 
         orm = Orm(url=EXTERNAL_DATABASE_URL)
-        
+
         for http_method_response in inference_response.response:
             target_table: Optional[Table] = None
             for table in http_method_response.application.tables:
                 if table.name == http_method_response.table_name:
                     target_table = table
             if not target_table:
-                raise ValueError(f"Table {http_method_response.table_name} not found in application {http_method_response.application.name}")
-            
+                raise ValueError(
+                    f"Table {http_method_response.table_name} not found in application {http_method_response.application.name}"
+                )
+
             table_orm_model: Type[DeclarativeMeta] = create_dynamic_orm(
-                table=target_table, 
-                application_name=http_method_response.application.name
+                table=target_table,
+                application_name=http_method_response.application.name,
             )
             match http_method_response.http_method:
                 case HttpMethod.POST:
-                    await orm.insert(model=table_orm_model, data=[http_method_response.inserted_row])
+                    await orm.insert(
+                        model=table_orm_model, data=[http_method_response.inserted_row]
+                    )
                 case HttpMethod.PUT:
-                    await orm.update(model=table_orm_model, data=http_method_response.updated_data)
+                    await orm.update(
+                        model=table_orm_model, data=http_method_response.updated_data
+                    )
                 case HttpMethod.DELETE:
-                    await orm.delete(model=table_orm_model, filters=http_method_response.filter_conditions)
+                    await orm.delete(
+                        model=table_orm_model,
+                        filters=http_method_response.filter_conditions,
+                    )
                 case HttpMethod.GET:
-                    await orm.get(model=table_orm_model, filters=http_method_response.filter_conditions)
+                    await orm.get(
+                        model=table_orm_model,
+                        filters=http_method_response.filter_conditions,
+                    )
                 case _:
-                    raise ValueError(f"Unsupported HTTP method: {http_method_response.http_method}")
-    
+                    raise ValueError(
+                        f"Unsupported HTTP method: {http_method_response.http_method}"
+                    )

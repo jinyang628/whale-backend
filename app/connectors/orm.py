@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from sqlalchemy import or_, and_, select, delete, update
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.decl_api import DeclarativeMeta
@@ -42,18 +43,49 @@ class Orm:
             await session.commit()
             log.info(f"Inserted {len(data)} rows into {model.__tablename__}")
         
-    # TODO: Implement more sophisticated filter conditions -> (A OR B) AND C
-    async def get(
+    async def get_application(
         self, 
-        model: Type[DeclarativeMeta], 
-        filters: list[dict[str, str]], 
-        is_and: bool = True, 
-        batch_size: int = 6500
+        orm_model: Type[DeclarativeMeta], 
+        pydantic_model: Type[BaseModel],
+        names: list[str], 
     ) -> list[BaseObject]:
         """Fetches entries from the specified table based on the filters provided.
 
         Args:
-            model (Type[DeclarativeMeta]): The SQLAlchemy model to fetch data of.
+            orm_model (Type[DeclarativeMeta]): The SQLAlchemy ORM model to fetch data of.
+            pydantic_model (Type[BaseModel]): The pydantic model to validate the ORM model to.
+            filters (list[dict): The filters to apply to the query.
+
+        Returns:
+            list[FishBaseObject]: A list of FishBaseObject that match the filters.
+        """
+        results = []
+        async with self.sessionmaker() as session:
+            query = select(orm_model)
+            if names:
+                query_filter = or_(*[orm_model.name == name for name in names])
+                query = query.filter(query_filter)                
+
+            results = await session.execute(query)
+            results = results.scalars().all()
+        
+        if not results:
+            return []
+        
+        return [pydantic_model.model_validate(result) for result in results]
+    
+    async def get_inference_result(
+        self, 
+        orm_model: Type[DeclarativeMeta], 
+        filters: list[dict[str, str]], 
+        is_and: bool = True, 
+        batch_size: int = 6500
+    ) -> list[dict[str, Any]]:
+        """Fetches entries from the specified table based on the filters provided.
+
+        Args:
+            orm_model (Type[DeclarativeMeta]): The SQLAlchemy ORM model to fetch data of.
+            pydantic_model (Type[BaseModel]): The pydantic model to validate the ORM model to.
             filters (list[dict): The filters to apply to the query.
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True (AND condition).
 
@@ -65,17 +97,11 @@ class Orm:
         
         async with self.sessionmaker() as session:
             while True:
-                query = select(model)
+                query = select(orm_model)
                 if filters:
-                    conditions = []
-                    for key, value in filters.items():
-                        attribute = getattr(model, key)
-                        if isinstance(value, list) and value:
-                            conditions.append(attribute.in_(value))  # Use `in_` for lists
-                        else:
-                            conditions.append(attribute == value)  # Regular equality for single values
-                    condition = and_ if is_and else or_
-                    query = query.filter(condition(*conditions))
+                    condition = and_ if is_and else or_                        
+                    query_filter = condition(*[getattr(orm_model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filters])
+                    query = query.filter(query_filter)
                 
                 query = query.limit(batch_size).offset(offset)
                 batch_results = await session.execute(query)
@@ -91,60 +117,12 @@ class Orm:
         if not results:
             return []
         
-        result: Type[DeclarativeMeta] = results[0]
-        match result:
-            case _ if isinstance(result, ApplicationORM):
-                return [Application.model_validate(entry) for entry in results]
-            case _:
-                raise ValueError(f"Model type {type(model)} not supported")
-            
-            
-    #                 async def get(
-    #     self, 
-    #     orm_model: Type[DeclarativeMeta], 
-    #     pydantic_model: BaseModel,
-    #     filters: list[dict[str, str]], 
-    #     is_and: bool = True, 
-    #     batch_size: int = 6500
-    # ) -> list[BaseObject]:
-    #     """Fetches entries from the specified table based on the filters provided.
+        inference_results: list[dict[str, Any]] = []
+        for result in results:
+            for column in result.__table__.columns:
+                inference_results.append({column.name: getattr(result, column.name)})
+        return inference_results
 
-    #     Args:
-    #         model (Type[DeclarativeMeta]): The SQLAlchemy model to fetch data of.
-    #         filters (list[dict): The filters to apply to the query.
-    #         is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True (AND condition).
-
-    #     Returns:
-    #         list[FishBaseObject]: A list of FishBaseObject that match the filters.
-    #     """
-    #     results = []
-    #     offset = 0
-        
-    #     async with self.sessionmaker() as session:
-    #         while True:
-    #             query = select(orm_model)
-    #             if filters:
-    #                 condition = and_ if is_and else or_
-    #                 query_filter = condition(*[getattr(orm_model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filters])
-    #                 query = query.filter(query_filter)
-            
-    #             query = query.limit(batch_size).offset(offset)
-    #             batch_results = await session.execute(query)
-    #             batch_results = batch_results.scalars().all()
-
-    #             if not batch_results:
-    #                 break
-            
-    #             results.extend(batch_results)
-    #             offset += batch_size        
-    #             log.info(f"Fetched {len(batch_results)} rows from {orm_model.__tablename__}")
-    
-    #     if not results:
-    #         return []
-    #     print("help me")
-    #     print(pydantic_model)
-    #     print(orm_model)
-    #     return [pydantic_model.model_validate(result) for result in results]
     
     # TODO: Implement more sophisticated filter conditions -> (A OR B) AND C
     def delete(

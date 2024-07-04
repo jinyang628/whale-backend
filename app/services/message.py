@@ -9,7 +9,7 @@ from dotenv import find_dotenv, load_dotenv
 from app.connectors.orm import Orm
 from app.models.application import PrimaryKey, Table
 from app.models.inference import ApplicationContent, HttpMethod, InferenceResponse
-from app.models.message import PostMessageResponse
+from app.models.message import Message, PostMessageResponse, Role
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.dynamic import create_dynamic_orm
 
@@ -26,8 +26,10 @@ class MessageService:
         self, application_names: list[str]
     ) -> list[ApplicationContent]:
         orm = Orm(url=INTERNAL_DATABASE_URL)
-        applications: list[Application] = await orm.get(
-            model=ApplicationORM, filters={"name": application_names}
+        applications: list[Application] = await orm.get_application(
+            orm_model=ApplicationORM, 
+            pydantic_model=Application,
+            names=application_names
         )
         application_content_lst: list[ApplicationContent] = []
         for application in applications:
@@ -41,7 +43,10 @@ class MessageService:
         return application_content_lst
 
     async def execute_inference_response(
-        self, inference_response: InferenceResponse
+        self, 
+        user_message: Message,
+        chat_history: list[Message],
+        inference_response: InferenceResponse
     ) -> PostMessageResponse:
 
         orm = Orm(url=EXTERNAL_DATABASE_URL)
@@ -72,13 +77,19 @@ class MessageService:
                 application_name=http_method_response.application.name,
             )
                             
-            print(target_table)
-            print(http_method_response)
-            print(http_method_response.filter_conditions)
             match http_method_response.http_method:
                 case HttpMethod.POST:
                     await orm.insert(
                         model=table_orm_model, data=[http_method_response.inserted_row]
+                    )
+                    response_message = Message(
+                        role=Role.ASSISTANT,
+                        content=f"The following row(s) has been inserted: {json.dumps(http_method_response.inserted_row)}"
+                    )
+                    chat_history.extend([user_message, response_message])
+                    return PostMessageResponse(
+                        message=response_message,
+                        chat_history=chat_history,
                     )
                 case HttpMethod.PUT:
                     await orm.update(
@@ -90,9 +101,18 @@ class MessageService:
                         filters=http_method_response.filter_conditions,
                     )
                 case HttpMethod.GET:
-                    await orm.get(
-                        model=table_orm_model,
+                    rows: list[dict[str, str]] = await orm.get_inference_result(
+                        orm_model=table_orm_model,
                         filters=http_method_response.filter_conditions,
+                    )
+                    response_message = Message(
+                        role=Role.ASSISTANT,
+                        content=f"The following row(s) have been retrieved: {json.dumps(rows)}"
+                    )
+                    chat_history.extend([user_message, response_message])
+                    return PostMessageResponse(
+                        message=response_message,
+                        chat_history=chat_history,
                     )
                 case _:
                     raise ValueError(

@@ -51,8 +51,10 @@ class ApplicationService:
     ) -> Optional[SelectApplicationResponse]:
         """Selects the entry from the application table."""
         orm = Orm(url=INTERNAL_DATABASE_URL)
-        result: list[Application] = await orm.get(
-            model=ApplicationORM, filters={"name": input.name}
+        result: list[Application] = await orm.get_application(
+            orm_model=ApplicationORM, 
+            pydantic_model=Application,
+            names=[input.name]
         )
         if len(result) != 1:
             return None

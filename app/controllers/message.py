@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from app.api.inference import infer
 from app.models.stores.application import Application
 from app.models.inference import ApplicationContent, InferenceRequest, InferenceResponse
-from app.models.message import PostMessageRequest, PostMessageResponse
+from app.models.message import Message, PostMessageRequest, PostMessageResponse, Role
 from app.services.message import MessageService
 
 log = logging.getLogger(__name__)
@@ -40,11 +40,16 @@ class MessageController:
                     )
                 )
                 result: PostMessageResponse = await self.service.execute_inference_response(
+                    user_message=Message(
+                        role=Role.USER,
+                        content=input.message
+                    ),
+                    chat_history=input.chat_history,
                     inference_response=inference_response
                 )
-                # return JSONResponse(
-                #     status_code=200, content=response.model_dump()
-                # )
+                return JSONResponse(
+                    status_code=200, content=result.model_dump()
+                )
             except ValidationError as e:
                 log.error("Validation error: %s", str(e))
                 raise HTTPException(status_code=422, detail="Validation error") from e

@@ -17,5 +17,5 @@ class PostMessageRequest(BaseModel):
 
 
 class PostMessageResponse(BaseModel):
-    content: str
+    message: Message
     chat_history: list[Message]

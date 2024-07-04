@@ -13,7 +13,7 @@ orm_class_cache = {}
 
 def create_dynamic_orm(table: Table, application_name: str):
     table_name = f"{application_name}_{table.name}"
-    class_name = f"{application_name.capitalize()}{table.name.capitalize()}"
+    class_name = f"{table_name}_class"
 
     # Check if the class already exists in the cache
     if class_name in orm_class_cache:

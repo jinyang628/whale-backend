@@ -56,5 +56,4 @@ class ApplicationService:
         )
         if len(result) != 1:
             return None
-        print(result)
         return SelectApplicationResponse(name=result[0].name)

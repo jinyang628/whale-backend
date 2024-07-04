@@ -37,10 +37,10 @@ class ApplicationController:
                 await self.service.generate_client_application(input=input)
                 return JSONResponse(status_code=200, content=response.model_dump())
             except ValidationError as e:
-                log.error("Validation error: %s", str(e))
+                log.error("Validation error in application controller: %s", str(e))
                 raise HTTPException(status_code=422, detail="Validation error") from e
             except DatabaseError as e:
-                log.error("Database error: %s", str(e))
+                log.error("Database error in application controller: %s", str(e))
                 raise HTTPException(status_code=500, detail="Database error") from e
             except Exception as e:
                 log.error("Unexpected error in application controller.py: %s", str(e))

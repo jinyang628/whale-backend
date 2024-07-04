@@ -46,7 +46,7 @@ class Orm:
     async def get(
         self, 
         model: Type[DeclarativeMeta], 
-        filters: dict[str, Union[list, str]], 
+        filters: list[dict[str, str]], 
         is_and: bool = True, 
         batch_size: int = 6500
     ) -> list[BaseObject]:
@@ -54,7 +54,7 @@ class Orm:
 
         Args:
             model (Type[DeclarativeMeta]): The SQLAlchemy model to fetch data of.
-            filters (dict): The filters to apply to the query.
+            filters (list[dict): The filters to apply to the query.
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True (AND condition).
 
         Returns:
@@ -97,6 +97,54 @@ class Orm:
                 return [Application.model_validate(entry) for entry in results]
             case _:
                 raise ValueError(f"Model type {type(model)} not supported")
+            
+            
+    #                 async def get(
+    #     self, 
+    #     orm_model: Type[DeclarativeMeta], 
+    #     pydantic_model: BaseModel,
+    #     filters: list[dict[str, str]], 
+    #     is_and: bool = True, 
+    #     batch_size: int = 6500
+    # ) -> list[BaseObject]:
+    #     """Fetches entries from the specified table based on the filters provided.
+
+    #     Args:
+    #         model (Type[DeclarativeMeta]): The SQLAlchemy model to fetch data of.
+    #         filters (list[dict): The filters to apply to the query.
+    #         is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True (AND condition).
+
+    #     Returns:
+    #         list[FishBaseObject]: A list of FishBaseObject that match the filters.
+    #     """
+    #     results = []
+    #     offset = 0
+        
+    #     async with self.sessionmaker() as session:
+    #         while True:
+    #             query = select(orm_model)
+    #             if filters:
+    #                 condition = and_ if is_and else or_
+    #                 query_filter = condition(*[getattr(orm_model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filters])
+    #                 query = query.filter(query_filter)
+            
+    #             query = query.limit(batch_size).offset(offset)
+    #             batch_results = await session.execute(query)
+    #             batch_results = batch_results.scalars().all()
+
+    #             if not batch_results:
+    #                 break
+            
+    #             results.extend(batch_results)
+    #             offset += batch_size        
+    #             log.info(f"Fetched {len(batch_results)} rows from {orm_model.__tablename__}")
+    
+    #     if not results:
+    #         return []
+    #     print("help me")
+    #     print(pydantic_model)
+    #     print(orm_model)
+    #     return [pydantic_model.model_validate(result) for result in results]
     
     # TODO: Implement more sophisticated filter conditions -> (A OR B) AND C
     def delete(
@@ -130,7 +178,7 @@ class Orm:
     def update(
         self, 
         model: Type[DeclarativeMeta], 
-        filters: dict[str, Union[list, str]], 
+        filters: list[dict[str, str]], 
         updates: dict, 
         is_and: bool = True
     ) -> int:
@@ -138,7 +186,7 @@ class Orm:
 
         Args:
             model (Type[DeclarativeMeta]): The SQLAlchemy model to update data of.
-            filters (dict): The filters to apply to the query.
+            filters (list[dict]): The filters to apply to the query.
             updates (dict): The updates to apply to the target rows.
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
 
@@ -148,7 +196,7 @@ class Orm:
         update_count: int = 0
         with Session(self.engine) as session:
             condition = and_ if is_and else or_
-            query_filter = condition(*[getattr(model, key) == value for key, value in filters.items()])
+            query_filter = condition(*[getattr(model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filters])
             update_stmt = update(model).where(query_filter).values(**updates)
             result = session.execute(update_stmt)
             session.commit()

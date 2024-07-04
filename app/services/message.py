@@ -7,7 +7,7 @@ from sqlalchemy.orm.decl_api import DeclarativeMeta
 from dotenv import find_dotenv, load_dotenv
 
 from app.connectors.orm import Orm
-from app.models.application import Table
+from app.models.application import PrimaryKey, Table
 from app.models.inference import ApplicationContent, HttpMethod, InferenceResponse
 from app.models.message import PostMessageResponse
 from app.models.stores.application import Application, ApplicationORM
@@ -55,11 +55,26 @@ class MessageService:
                 raise ValueError(
                     f"Table {http_method_response.table_name} not found in application {http_method_response.application.name}"
                 )
-
+                
+            primary_key: Optional[PrimaryKey] = None
+            for column in target_table.columns:
+                if column.primary_key == PrimaryKey.NONE:
+                    continue
+                primary_key = column.primary_key
+                break
+            if not primary_key:
+                raise TypeError(
+                    f"Table {target_table.name} does not have a primary key"
+                )
+                
             table_orm_model: Type[DeclarativeMeta] = create_dynamic_orm(
                 table=target_table,
                 application_name=http_method_response.application.name,
             )
+                            
+            print(target_table)
+            print(http_method_response)
+            print(http_method_response.filter_conditions)
             match http_method_response.http_method:
                 case HttpMethod.POST:
                     await orm.insert(

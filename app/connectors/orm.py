@@ -124,33 +124,51 @@ class Orm:
         return inference_results
 
     
-    # TODO: Implement more sophisticated filter conditions -> (A OR B) AND C
-    def delete(
+    async def delete_inference_result(
         self, 
         model: Type[DeclarativeMeta], 
-        filters: dict[str, Union[list, str]], 
-        is_and: bool = True
+        filters: list[dict[str, str]], 
+        is_and: bool = True,
+        batch_size: int = 6500
     ) -> int:
         """Deletes entries from the specified table based on the filters provided.
 
         Args:
             model (Type[DeclarativeMeta]): The SQLAlchemy model to delete data of.
-            filters (dict): The filters to apply to the query.
+            filters (list[dict]): The filters to apply to the query.
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
 
         Returns:
             int: The number of rows deleted.
         """
-        delete_count: int = 0
-        with Session(self.engine) as session:
-            if filters:
-                condition = and_ if is_and else or_
-                delete_query = delete(model).where(condition(*[getattr(model, key) == value for key, value in filters.items()]))
-                result = session.execute(delete_query)
-                session.commit()
-                delete_count = result.rowcount
-        log.info(f"Deleting {delete_count} rows from database")
-        return delete_count 
+        total_delete_count: int = 0
+        offset = 0
+
+        async with self.sessionmaker() as session:
+            while True:
+                query = select(model.id)
+                if filters:
+                    condition = and_ if is_and else or_
+                    query_filter = condition(*[getattr(model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filters])
+                    query = query.filter(query_filter)
+
+                query = query.limit(batch_size).offset(offset)
+                batch_results = await session.execute(query)
+                batch_ids = batch_results.scalars().all()
+
+                if not batch_ids:
+                    break
+
+                delete_query = delete(model).where(model.id.in_(batch_ids))
+                result = await session.execute(delete_query)
+                await session.commit()
+
+                batch_delete_count = result.rowcount
+                total_delete_count += batch_delete_count
+                offset += batch_size
+                log.info(f"Deleted {batch_delete_count} rows from database in this batch")
+
+        return total_delete_count
     
     # TODO: Implement more sophisticated filter conditions -> (A OR B) AND C
     def update(

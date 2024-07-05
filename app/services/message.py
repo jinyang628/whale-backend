@@ -96,9 +96,18 @@ class MessageService:
                         model=table_orm_model, data=http_method_response.updated_data
                     )
                 case HttpMethod.DELETE:
-                    await orm.delete(
+                    deleted_count: int = await orm.delete_inference_result(
                         model=table_orm_model,
                         filters=http_method_response.filter_conditions,
+                    )
+                    response_message = Message(
+                        role=Role.ASSISTANT,
+                        content=f"{deleted_count} row(s) have been deleted"
+                    )
+                    chat_history.extend([user_message, response_message])
+                    return PostMessageResponse(
+                        message=response_message,
+                        chat_history=chat_history,
                     )
                 case HttpMethod.GET:
                     rows: list[dict[str, str]] = await orm.get_inference_result(

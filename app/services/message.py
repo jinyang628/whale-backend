@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Optional, Tuple, Type
+from typing import Optional, Type
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 from dotenv import find_dotenv, load_dotenv
@@ -80,11 +80,11 @@ class MessageService:
             match http_method_response.http_method:
                 case HttpMethod.POST:
                     await orm.insert(
-                        model=table_orm_model, data=[http_method_response.inserted_row]
+                        model=table_orm_model, data=http_method_response.inserted_rows
                     )
                     response_message = Message(
                         role=Role.ASSISTANT,
-                        content=f"The following row(s) has been inserted: {json.dumps(http_method_response.inserted_row)}"
+                        content=f"The following row(s) has been inserted: {json.dumps(http_method_response.inserted_rows)}"
                     )
                     chat_history.extend([user_message, response_message])
                     return PostMessageResponse(

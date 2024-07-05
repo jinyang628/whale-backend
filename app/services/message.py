@@ -92,8 +92,19 @@ class MessageService:
                         chat_history=chat_history,
                     )
                 case HttpMethod.PUT:
-                    await orm.update(
-                        model=table_orm_model, data=http_method_response.updated_data
+                    updated_count: int = await orm.update_inference_result(
+                        model=table_orm_model, 
+                        filter_conditions=http_method_response.filter_conditions,
+                        updated_data=http_method_response.updated_data
+                    )
+                    response_message = Message(
+                        role=Role.ASSISTANT,
+                        content=f"{updated_count} row(s) have been updated"
+                    )
+                    chat_history.extend([user_message, response_message])
+                    return PostMessageResponse(
+                        message=response_message,
+                        chat_history=chat_history,
                     )
                 case HttpMethod.DELETE:
                     deleted_count: int = await orm.delete_inference_result(

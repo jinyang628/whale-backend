@@ -170,12 +170,11 @@ class Orm:
 
         return total_delete_count
     
-    # TODO: Implement more sophisticated filter conditions -> (A OR B) AND C
-    def update(
+    async def update_inference_result(
         self, 
         model: Type[DeclarativeMeta], 
-        filters: list[dict[str, str]], 
-        updates: dict, 
+        filter_conditions: list[dict[str, str]], 
+        updated_data: list[dict[str, Any]], 
         is_and: bool = True
     ) -> int:
         """Updates entries in the specified table based on the filters provided.
@@ -183,21 +182,24 @@ class Orm:
         Args:
             model (Type[DeclarativeMeta]): The SQLAlchemy model to update data of.
             filters (list[dict]): The filters to apply to the query.
-            updates (dict): The updates to apply to the target rows.
+            updates (list[dict]): The updates to apply to the target rows.
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
 
         Returns:
             int: The number of rows updated
         """
         update_count: int = 0
-        with Session(self.engine) as session:
+        
+        async with self.sessionmaker() as session:
             condition = and_ if is_and else or_
-            query_filter = condition(*[getattr(model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filters])
-            update_stmt = update(model).where(query_filter).values(**updates)
-            result = session.execute(update_stmt)
-            session.commit()
+            query_filter = condition(*[getattr(model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filter_conditions])
+            update_values = {item['column_name']: item['column_value'] for item in updated_data}
+            update_stmt = update(model).where(query_filter).values(**update_values)
+            result = await session.execute(update_stmt)
+            await session.commit()
             update_count = result.rowcount
-        log.info(f"Updating {update_count} rows in database")
+            log.info(f"Updated {update_count} rows in database")
+            
         return update_count
     
     ### Miscellaneous ###

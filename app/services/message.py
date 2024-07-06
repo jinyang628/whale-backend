@@ -50,7 +50,8 @@ class MessageService:
     ) -> PostMessageResponse:
 
         orm = Orm(url=EXTERNAL_DATABASE_URL)
-
+        chat_history.append(user_message)
+        response_message_content: str = ""
         for http_method_response in inference_response.response:
             target_table: Optional[Table] = None
             for table in http_method_response.application.tables:
@@ -82,59 +83,37 @@ class MessageService:
                     await orm.insert(
                         model=table_orm_model, data=http_method_response.inserted_rows
                     )
-                    response_message = Message(
-                        role=Role.ASSISTANT,
-                        content=f"The following row(s) has been inserted: {json.dumps(http_method_response.inserted_rows)}"
-                    )
-                    chat_history.extend([user_message, response_message])
-                    return PostMessageResponse(
-                        message=response_message,
-                        chat_history=chat_history,
-                    )
+                    response_message_content += f"The following row(s) has been inserted: {json.dumps(http_method_response.inserted_rows)}\n"
                 case HttpMethod.PUT:
                     updated_count: int = await orm.update_inference_result(
                         model=table_orm_model, 
                         filter_conditions=http_method_response.filter_conditions,
                         updated_data=http_method_response.updated_data
                     )
-                    response_message = Message(
-                        role=Role.ASSISTANT,
-                        content=f"{updated_count} row(s) have been updated"
-                    )
-                    chat_history.extend([user_message, response_message])
-                    return PostMessageResponse(
-                        message=response_message,
-                        chat_history=chat_history,
-                    )
+                    response_message_content += f"{updated_count} row(s) have been updated\n"
                 case HttpMethod.DELETE:
                     deleted_count: int = await orm.delete_inference_result(
                         model=table_orm_model,
                         filters=http_method_response.filter_conditions,
                     )
-                    response_message = Message(
-                        role=Role.ASSISTANT,
-                        content=f"{deleted_count} row(s) have been deleted"
-                    )
-                    chat_history.extend([user_message, response_message])
-                    return PostMessageResponse(
-                        message=response_message,
-                        chat_history=chat_history,
-                    )
+                    response_message_content += f"{deleted_count} row(s) have been deleted\n"
                 case HttpMethod.GET:
                     rows: list[dict[str, str]] = await orm.get_inference_result(
                         orm_model=table_orm_model,
                         filters=http_method_response.filter_conditions,
                     )
-                    response_message = Message(
-                        role=Role.ASSISTANT,
-                        content=f"The following row(s) have been retrieved: {json.dumps(rows)}"
-                    )
-                    chat_history.extend([user_message, response_message])
-                    return PostMessageResponse(
-                        message=response_message,
-                        chat_history=chat_history,
-                    )
+                    response_message_content += f"The following row(s) have been retrieved: {json.dumps(rows)}\n"
                 case _:
                     raise ValueError(
                         f"Unsupported HTTP method: {http_method_response.http_method}"
                     )
+            
+        response_message = Message(
+            role=Role.ASSISTANT,
+            content=response_message_content
+        ) 
+        chat_history.append(response_message)
+        return PostMessageResponse(
+            message=response_message,
+            chat_history=chat_history
+        )

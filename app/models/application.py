@@ -9,6 +9,7 @@ class DataType(StrEnum):
     INTEGER = "integer"
     FLOAT = "float"
     BOOLEAN = "boolean"
+    DATETIME = "datetime"
 
 
 # TODO: Add more types, e.g. UUID, etc. Will handle the id generation in house in server
@@ -101,7 +102,7 @@ class SelectApplicationRequest(BaseModel):
 
 
 class SelectApplicationResponse(BaseModel):
-    name: str
+    application: ApplicationContent
 
     class Config:
         extra = "forbid"

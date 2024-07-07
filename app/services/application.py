@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from typing import Optional
@@ -7,10 +8,12 @@ from dotenv import find_dotenv, load_dotenv
 from app.connectors.orm import Orm
 from app.models.stores.application import Application, ApplicationORM
 from app.models.application import (
+    ApplicationContent,
     PostApplicationRequest,
     PostApplicationResponse,
     SelectApplicationRequest,
     SelectApplicationResponse,
+    Table,
 )
 from app.stores.base.main import generate_client_table
 
@@ -58,4 +61,10 @@ class ApplicationService:
         )
         if len(result) != 1:
             return None
-        return SelectApplicationResponse(name=result[0].name)
+        print(result)
+        app: Application = result[0]
+        application_content = ApplicationContent(
+            name=app.name,
+            tables=[Table.model_validate(table) for table in json.loads(app.tables)]
+        )
+        return SelectApplicationResponse(application=application_content)

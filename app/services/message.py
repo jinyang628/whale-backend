@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Optional, Type
+from typing import Any, Optional, Type
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 from dotenv import find_dotenv, load_dotenv
@@ -83,26 +83,26 @@ class MessageService:
                     await orm.insert(
                         model=table_orm_model, data=http_method_response.inserted_rows
                     )
-                    response_message_content += f"The following row(s) has been inserted: {json.dumps(http_method_response.inserted_rows)}\n"
+                    response_message_content += f"The following row(s) has been inserted:\n{json.dumps(http_method_response.inserted_rows, indent=4)}\n"
                 case HttpMethod.PUT:
-                    updated_count: int = await orm.update_inference_result(
+                    updated_data: list[dict[str, Any]] = await orm.update_inference_result(
                         model=table_orm_model, 
                         filter_conditions=http_method_response.filter_conditions,
                         updated_data=http_method_response.updated_data
                     )
-                    response_message_content += f"{updated_count} row(s) have been updated\n"
+                    response_message_content += f"The following {len(updated_data)} row(s) have been updated:\n{json.dumps(updated_data, indent=4)}\n"
                 case HttpMethod.DELETE:
-                    deleted_count: int = await orm.delete_inference_result(
+                    deleted_data: list[dict[str, Any]] = await orm.delete_inference_result(
                         model=table_orm_model,
-                        filters=http_method_response.filter_conditions,
+                        filter_conditions=http_method_response.filter_conditions,
                     )
-                    response_message_content += f"{deleted_count} row(s) have been deleted\n"
+                    response_message_content += f"The following {len(deleted_data)} row(s) have been deleted:\n{json.dumps(deleted_data, indent=4)}\n"
                 case HttpMethod.GET:
-                    rows: list[dict[str, str]] = await orm.get_inference_result(
+                    rows: list[dict[str, Any]] = await orm.get_inference_result(
                         orm_model=table_orm_model,
                         filters=http_method_response.filter_conditions,
                     )
-                    response_message_content += f"The following row(s) have been retrieved: {json.dumps(rows)}\n"
+                    response_message_content += f"The following row(s) have been retrieved: {json.dumps(rows, indent=4)}\n"
                 case _:
                     raise ValueError(
                         f"Unsupported HTTP method: {http_method_response.http_method}"

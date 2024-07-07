@@ -3,13 +3,11 @@ from sqlalchemy import or_, and_, select, delete, update
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.pool import NullPool
 
 import logging
-from typing import Any, Type, Union
+from typing import Any, Type
 
 from app.models.stores.base import BaseObject
-from app.models.stores.application import Application, ApplicationORM
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -127,48 +125,43 @@ class Orm:
     async def delete_inference_result(
         self, 
         model: Type[DeclarativeMeta], 
-        filters: list[dict[str, str]], 
+        filter_conditions: list[dict[str, str]], 
         is_and: bool = True,
-        batch_size: int = 6500
     ) -> int:
         """Deletes entries from the specified table based on the filters provided.
 
         Args:
             model (Type[DeclarativeMeta]): The SQLAlchemy model to delete data of.
-            filters (list[dict]): The filters to apply to the query.
+            filter_conditions (list[dict]): The filters to apply to the query.
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
 
         Returns:
             int: The number of rows deleted.
         """
-        total_delete_count: int = 0
-        offset = 0
-
+        results: list[dict[str, Any]] = []
+    
         async with self.sessionmaker() as session:
-            while True:
-                query = select(model.id)
-                if filters:
-                    condition = and_ if is_and else or_
-                    query_filter = condition(*[getattr(model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filters])
-                    query = query.filter(query_filter)
-
-                query = query.limit(batch_size).offset(offset)
-                batch_results = await session.execute(query)
-                batch_ids = batch_results.scalars().all()
-
-                if not batch_ids:
-                    break
-
-                delete_query = delete(model).where(model.id.in_(batch_ids))
-                result = await session.execute(delete_query)
-                await session.commit()
-
-                batch_delete_count = result.rowcount
-                total_delete_count += batch_delete_count
-                offset += batch_size
-                log.info(f"Deleted {batch_delete_count} rows from database in this batch")
-
-        return total_delete_count
+            condition = and_ if is_and else or_
+            query_filter = condition(*[getattr(model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filter_conditions])
+            
+            # Fetch the rows to be deleted
+            select_stmt = select(model).where(query_filter)
+            result = await session.execute(select_stmt)
+            to_delete_rows = result.scalars().all()
+            
+            # Convert the to-be-deleted rows to dictionaries
+            for row in to_delete_rows:
+                row_dict = {column.name: getattr(row, column.name) for column in model.__table__.columns}
+                results.append(row_dict)
+            
+            # Perform the delete operation
+            delete_stmt = delete(model).where(query_filter)
+            await session.execute(delete_stmt)
+            await session.commit()
+            
+            log.info(f"Deleted {len(results)} rows from database")
+        
+        return results
     
     async def update_inference_result(
         self, 
@@ -176,7 +169,7 @@ class Orm:
         filter_conditions: list[dict[str, str]], 
         updated_data: list[dict[str, Any]], 
         is_and: bool = True
-    ) -> int:
+    ) -> list[dict[str, Any]]:
         """Updates entries in the specified table based on the filters provided.
 
         Args:
@@ -186,9 +179,10 @@ class Orm:
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
 
         Returns:
-            int: The number of rows updated
+            list[dict[str, Any]]: The updated rows
         """
-        update_count: int = 0
+        
+        results: list[dict[str, Any]] = []
         
         async with self.sessionmaker() as session:
             condition = and_ if is_and else or_
@@ -197,10 +191,20 @@ class Orm:
             update_stmt = update(model).where(query_filter).values(**update_values)
             result = await session.execute(update_stmt)
             await session.commit()
-            update_count = result.rowcount
-            log.info(f"Updated {update_count} rows in database")
             
-        return update_count
+            # Fetch the updated rows
+            select_stmt = select(model).where(query_filter)
+            result = await session.execute(select_stmt)
+            updated_rows = result.scalars().all()
+            
+            # Convert the updated rows to dictionaries
+            for row in updated_rows:
+                row_dict = {column.name: getattr(row, column.name) for column in model.__table__.columns}
+                results.append(row_dict)
+            
+            log.info(f"Updated {len(results)} rows in database")
+            
+        return results
     
     ### Miscellaneous ###
     def get_column(self, model: Type[DeclarativeMeta], column: str, filters: dict, is_and: bool = True, batch_size: int = 6500) -> list[Any]:

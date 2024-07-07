@@ -1,9 +1,13 @@
 import json
 from app.models.stores.base import BaseObject
-from app.models.utils import generate_identifier, sql_value_to_typed_value
+from app.models.utils import sql_value_to_typed_value
 from sqlalchemy import JSON, UUID, Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base 
 from sqlalchemy.sql import func
+import logging
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # Update this version accordingly
 ENTRY_VERSION: int = 1

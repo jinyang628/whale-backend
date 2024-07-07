@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 
 log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 async def generate_client_table(table_name: str, columns: list[Column], db_url: str):
     sql_script = generate_sql_script(table_name=table_name, columns=columns)

@@ -1,4 +1,8 @@
 from app.models.application import Column, DataType, PrimaryKey
+import logging
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # TODO: The mapping here is important because not every database has the same types. And it doesn't seem like a good idea that we update valid SDK data types everytime we change a DB? The mapping here represents what is valid for SQLite, which will change IF we ever change databases
 def get_sql_type(data_type: DataType) -> str:
@@ -58,5 +62,5 @@ CREATE TRIGGER {table_name}_update
 BEFORE UPDATE ON {table_name}
 FOR EACH ROW EXECUTE FUNCTION {table_name}_update_trigger();
 """
-    print(script)
+    log.info(script)
     return script

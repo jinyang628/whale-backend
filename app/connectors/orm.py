@@ -9,7 +9,7 @@ from typing import Any, Type
 
 from app.models.stores.base import BaseObject
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
 
 class Orm:
@@ -19,7 +19,7 @@ class Orm:
     ):
         self.engine = create_async_engine(
             url,
-            echo=True
+            echo=False,
         )
         self.sessionmaker = sessionmaker(
             bind=self.engine,

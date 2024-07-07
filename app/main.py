@@ -5,6 +5,10 @@ from app.controllers.application import ApplicationController
 from app.controllers.message import MessageController
 from app.services.application import ApplicationService
 from app.services.message import MessageService
+import logging
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 

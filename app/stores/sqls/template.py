@@ -22,6 +22,8 @@ def generate_sql_script(table_name: str, columns: list[Column]):
     for col in columns:
         sql_type = get_sql_type(col.data_type)
         nullable = "" if col.nullable else " NOT NULL"
+        default = f" DEFAULT {col.default_value}" if col.default_value is not None else ""
+
         
         if col.primary_key != PrimaryKey.NONE:
             match col.primary_key:

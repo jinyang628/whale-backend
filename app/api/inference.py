@@ -7,7 +7,7 @@ import logging
 
 from app.models.inference import InferenceRequest, InferenceResponse
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
 
@@ -24,12 +24,9 @@ def infer(input: InferenceRequest) -> InferenceResponse:
         response.raise_for_status()
         inference_response = InferenceResponse.model_validate(response.json())
         return inference_response
-    except TypeError as e:
-        log.error(f"Failed to parse the response for id {input.id} from server: {e}")
-        return None
     except requests.RequestException as e:
-        log.error(f"Failed to fetch response for id {input.id} from server: {e}")
-        return None
+        log.error(f"Failed to infer response from server: {e}")
+        raise e
     except Exception as e:
-        log.error(f"Unknown error for id {input.id} occurred: {e}")
-        return None
+        log.error(f"Unknown error during inference occurred: {e}")
+        raise e

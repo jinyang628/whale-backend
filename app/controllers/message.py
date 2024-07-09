@@ -1,11 +1,11 @@
 import logging
+import requests
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app.api.inference import infer
-from app.models.stores.application import Application
 from app.models.inference import ApplicationContent, InferenceRequest, InferenceResponse
 from app.models.message import Message, PostMessageRequest, PostMessageResponse, Role
 from app.services.message import MessageService
@@ -53,6 +53,9 @@ class MessageController:
             except ValidationError as e:
                 log.error("Validation error: %s", str(e))
                 raise HTTPException(status_code=422, detail="Validation error") from e
+            except requests.RequestException as e:
+                log.error(f"Failed to infer response from server: {e}")
+                raise HTTPException(status_code=422, detail="Inference error occurred") from e                        
             except Exception as e:
                 log.error("Unexpected error in application controller.py: %s", str(e))
                 raise HTTPException(status_code=500, detail="An unexpected error occurred") from e            

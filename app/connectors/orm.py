@@ -117,8 +117,10 @@ class Orm:
         
         inference_results: list[dict[str, Any]] = []
         for result in results:
+            row_result = {}
             for column in result.__table__.columns:
-                inference_results.append({column.name: getattr(result, column.name)})
+                row_result[column.name] = getattr(result, column.name)
+            inference_results.append(row_result)
         return inference_results
 
     

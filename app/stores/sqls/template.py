@@ -30,6 +30,7 @@ def generate_sql_script(table_name: str, columns: list[Column]):
         default = (
             f" DEFAULT {col.default_value}" if col.default_value is not None else ""
         )
+        unique = " UNIQUE" if col.unique else ""
 
         if col.primary_key != PrimaryKey.NONE:
             match col.primary_key:
@@ -41,7 +42,7 @@ def generate_sql_script(table_name: str, columns: list[Column]):
                 case _:
                     raise ValueError(f"Unsupported primary key type: {col.primary_key}")
 
-        column_defs.append(f"    {col.name} {sql_type}{nullable}")
+        column_defs.append(f"    {col.name} {sql_type}{unique}{nullable}")
 
     column_defs_str = ",\n".join(column_defs)
 

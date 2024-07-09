@@ -31,7 +31,7 @@ class ApplicationService:
         tables_dump: list[dict] = [table.model_dump() for table in input.tables]
         application = Application.local(name=input.name, tables=tables_dump)
         orm = Orm(url=INTERNAL_DATABASE_URL)
-        await orm.insert(model=ApplicationORM, data=[application.model_dump()])
+        await orm.post(model=ApplicationORM, data=[application.model_dump()])
         return PostApplicationResponse(name=application.name)
 
     async def generate_client_application(

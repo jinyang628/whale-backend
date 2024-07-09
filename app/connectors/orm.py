@@ -28,7 +28,7 @@ class Orm:
         )
         
         
-    async def insert(self, model: Type[DeclarativeMeta], data: list[dict[str, Any]]):
+    async def post(self, model: Type[DeclarativeMeta], data: list[dict[str, Any]]) -> list[Any]:
         """
         Inserts a list of model instances into the database.
 
@@ -36,10 +36,14 @@ class Orm:
         models (list[FishBaseObject]): A list of FishBaseObject to be inserted.
         """
         orm_instances = [model(**item) for item in data]
+        inserted_ids: list[Any] = []
         async with self.sessionmaker() as session:
             session.add_all(orm_instances)
+            await session.flush()
+            inserted_ids = [instance.id for instance in orm_instances]
             await session.commit()
             log.info(f"Inserted {len(data)} rows into {model.__tablename__}")
+        return inserted_ids
         
     async def get_application(
         self, 
@@ -129,7 +133,7 @@ class Orm:
         model: Type[DeclarativeMeta], 
         filter_conditions: list[dict[str, str]], 
         is_and: bool = True,
-    ) -> int:
+    ) -> list[dict[Any, dict]]:
         """Deletes entries from the specified table based on the filters provided.
 
         Args:
@@ -138,7 +142,7 @@ class Orm:
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
 
         Returns:
-            int: The number of rows deleted.
+            list[dict[Any, dict]]: The data necessary to reverse the deletion.
         """
         results: list[dict[str, Any]] = []
     
@@ -171,42 +175,66 @@ class Orm:
         filter_conditions: list[dict[str, str]], 
         updated_data: list[dict[str, Any]], 
         is_and: bool = True
-    ) -> list[dict[str, Any]]:
+    ) -> tuple[list[dict[str, Any]], list[dict[Any, dict]]]:
         """Updates entries in the specified table based on the filters provided.
 
         Args:
             model (Type[DeclarativeMeta]): The SQLAlchemy model to update data of.
-            filters (list[dict]): The filters to apply to the query.
-            updates (list[dict]): The updates to apply to the target rows.
+            filter_conditions (list[dict]): The filters to apply to the query.
+            updated_data (list[dict]): The updates to apply to the target rows.
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
 
         Returns:
-            list[dict[str, Any]]: The updated rows
+            tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]: 
+            A tuple containing:
+            1. The updated rows
+            2. The data necessary to reverse the update
         """
         
-        results: list[dict[str, Any]] = []
+        updated_results: list[dict[str, Any]] = []
+        original_results: list[dict[str, Any]] = []
+        reverse_filter_conditions: list[dict[str, str]] = []
         
         async with self.sessionmaker() as session:
             condition = and_ if is_and else or_
             query_filter = condition(*[getattr(model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filter_conditions])
+            
+            # Fetch the original rows before update
+            select_stmt = select(model).where(query_filter)
+            result = await session.execute(select_stmt)
+            original_rows = result.scalars().all()
+            
+            # Store original values and create filter conditions
+            for row in original_rows:
+                original_dict = {column.name: getattr(row, column.name) for column in model.__table__.columns}
+                original_results.append(original_dict)
+                reverse_filter_conditions.append({"column_name": "id", "column_value": str(row.id)})
+            
+            # Perform the update
             update_values = {item['column_name']: item['column_value'] for item in updated_data}
             update_stmt = update(model).where(query_filter).values(**update_values)
-            result = await session.execute(update_stmt)
+            await session.execute(update_stmt)
             await session.commit()
             
             # Fetch the updated rows
-            select_stmt = select(model).where(query_filter)
             result = await session.execute(select_stmt)
             updated_rows = result.scalars().all()
             
             # Convert the updated rows to dictionaries
             for row in updated_rows:
                 row_dict = {column.name: getattr(row, column.name) for column in model.__table__.columns}
-                results.append(row_dict)
+                updated_results.append(row_dict)
             
-            log.info(f"Updated {len(results)} rows in database")
-            
-        return results
+            log.info(f"Updated {len(updated_results)} rows in database")
+        
+        # Create reverse updated_data
+        reverse_updated_data = []
+        for original, updated in zip(original_results, updated_results):
+            for key, value in updated.items():
+                if original[key] != value:
+                    reverse_updated_data.append({original["id"]: {"column_name": key, "column_value": original[key]}})
+        
+        return updated_results, reverse_updated_data
     
     ### Miscellaneous ###
     def get_column(self, model: Type[DeclarativeMeta], column: str, filters: dict, is_and: bool = True, batch_size: int = 6500) -> list[Any]:

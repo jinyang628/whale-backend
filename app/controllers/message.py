@@ -47,6 +47,7 @@ class MessageController:
                     chat_history=input.chat_history,
                     inference_response=inference_response
                 )
+                print(result)
                 return JSONResponse(
                     status_code=200, content=result.model_dump()
                 )

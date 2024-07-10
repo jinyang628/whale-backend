@@ -1,6 +1,8 @@
 from enum import StrEnum
 from pydantic import BaseModel
 
+from app.models.reverse import ReverseActionWrapper
+
 class Role(StrEnum):
     USER = "user"
     ASSISTANT = "assistant"
@@ -19,3 +21,4 @@ class PostMessageRequest(BaseModel):
 class PostMessageResponse(BaseModel):
     message: Message
     chat_history: list[Message]
+    reverse_stack: list[ReverseActionWrapper]

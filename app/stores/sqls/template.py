@@ -18,14 +18,19 @@ def get_sql_type(data_type: DataType) -> str:
 
 # TODO: Implement some sort of versioning system so clients can update their tables without breaking the application/dropping the entire table
 # TODO: Implement unique constraints that can be controlled by clients when creating applications
+
+
+## continue from here for unique logic
 def generate_sql_script(table_name: str, columns: list[Column]):
     # Generate column definitions
     column_defs = []
     for col in columns:
         sql_type = get_sql_type(col.data_type)
         nullable = "" if col.nullable else " NOT NULL"
-        default = ""
-
+        default = (
+            f" DEFAULT {col.default_value}" if col.default_value is not None else ""
+        )
+        unique = " UNIQUE" if col.unique else ""
         if col.primary_key != PrimaryKey.NONE:
             match col.primary_key:
                 case PrimaryKey.AUTO_INCREMENT:
@@ -44,7 +49,7 @@ def generate_sql_script(table_name: str, columns: list[Column]):
                 else:
                     default = f" DEFAULT {col.default_value}"
 
-        column_defs.append(f"    {col.name} {sql_type}{nullable}{default}")
+        column_defs.append(f"    {col.name} {sql_type}{nullable}{default}{unique}")
 
     column_defs_str = ",\n".join(column_defs)
 

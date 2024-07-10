@@ -15,10 +15,11 @@ class Message(BaseModel):
 class PostMessageRequest(BaseModel):
     message: str
     chat_history: list[Message]
+    reverse_stack: list[ReverseActionWrapper]
     application_names: list[str]
 
 
 class PostMessageResponse(BaseModel):
-    message: Message
+    message_lst: list[Message]
     chat_history: list[Message]
     reverse_stack: list[ReverseActionWrapper]

@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from app.api.inference import infer
 from app.models.inference import ApplicationContent, InferenceRequest, InferenceResponse
 from app.models.message import Message, PostMessageRequest, PostMessageResponse, Role
+from app.models.reverse import ReverseActionDelete, ReverseActionWrapper
 from app.services.message import MessageService
 
 log = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ class MessageController:
 
         router = self.router
 
-        @router.post("")
+        @router.post("/send")
         async def post(input: PostMessageRequest) -> JSONResponse:
             try:
                 application_content_lst: list[ApplicationContent] = await self.service.get_application_content_lst(
@@ -45,6 +46,7 @@ class MessageController:
                         content=input.message
                     ),
                     chat_history=input.chat_history,
+                    reverse_stack=input.reverse_stack,
                     inference_response=inference_response
                 )
                 print(result)
@@ -58,5 +60,19 @@ class MessageController:
                 log.error(f"Failed to infer response from server: {e}")
                 raise HTTPException(status_code=422, detail="Inference error occurred") from e                        
             except Exception as e:
-                log.error("Unexpected error in application controller.py: %s", str(e))
-                raise HTTPException(status_code=500, detail="An unexpected error occurred") from e            
+                log.error("Unexpected error in message controller.py: %s", str(e))
+                raise HTTPException(status_code=500, detail="An unexpected error occurred") from e  
+            
+        @router.post("/reverse")
+        async def reverse(input: ReverseActionWrapper) -> JSONResponse:
+            try:
+                print(input)
+                print("error")
+                await self.service.reverse_inference_response(input=input)
+            except ValidationError as e:
+                log.error("Validation error: %s", str(e))
+                return HTTPException(status_code=422, detail=str(e))
+            except Exception as e:
+                log.error("Unexpected error in message controller.py: %s", str(e))
+                raise HTTPException(status_code=500, detail="An unexpected error occurred") from e
+    

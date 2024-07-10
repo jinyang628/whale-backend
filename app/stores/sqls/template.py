@@ -4,6 +4,7 @@ import logging
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
 # TODO: The mapping here is important because not every database has the same types. And it doesn't seem like a good idea that we update valid SDK data types everytime we change a DB? The mapping here represents what is valid for SQLite, which will change IF we ever change databases
 def get_sql_type(data_type: DataType) -> str:
     sql_type_map = {
@@ -14,17 +15,22 @@ def get_sql_type(data_type: DataType) -> str:
     }
     return sql_type_map[data_type]
 
+
 # TODO: Implement some sort of versioning system so clients can update their tables without breaking the application/dropping the entire table
 # TODO: Implement unique constraints that can be controlled by clients when creating applications
+
+
+## continue from here for unique logic
 def generate_sql_script(table_name: str, columns: list[Column]):
     # Generate column definitions
     column_defs = []
     for col in columns:
         sql_type = get_sql_type(col.data_type)
         nullable = "" if col.nullable else " NOT NULL"
-        default = f" DEFAULT {col.default_value}" if col.default_value is not None else ""
-
-        
+        default = (
+            f" DEFAULT {col.default_value}" if col.default_value is not None else ""
+        )
+        unique = " UNIQUE" if col.unique else ""
         if col.primary_key != PrimaryKey.NONE:
             match col.primary_key:
                 case PrimaryKey.AUTO_INCREMENT:
@@ -34,11 +40,19 @@ def generate_sql_script(table_name: str, columns: list[Column]):
                 #     sql_type = "UUID PRIMARY KEY DEFAULT gen_random_uuid()"
                 case _:
                     raise ValueError(f"Unsupported primary key type: {col.primary_key}")
-                
-        column_defs.append(f"    {col.name} {sql_type}{nullable}")
+        else:
+            if col.default_value is not None:
+                if isinstance(col.default_value, str):
+                    default = f" DEFAULT '{col.default_value}'"
+                elif isinstance(col.default_value, bool):
+                    default = f" DEFAULT {'TRUE' if col.default_value else 'FALSE'}"
+                else:
+                    default = f" DEFAULT {col.default_value}"
+
+        column_defs.append(f"    {col.name} {sql_type}{nullable}{default}{unique}")
 
     column_defs_str = ",\n".join(column_defs)
-    
+
     script = f"""
 DROP TABLE IF EXISTS {table_name};
 ##

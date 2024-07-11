@@ -22,15 +22,13 @@ def get_sql_type(data_type: DataType) -> str:
 
 ## continue from here for unique logic
 def generate_sql_script(table_name: str, columns: list[Column]):
-    # Generate column definitions
+    """Generates SQL script for creating a table."""
     column_defs = []
     for col in columns:
         sql_type = get_sql_type(col.data_type)
         nullable = "" if col.nullable else " NOT NULL"
-        default = (
-            f" DEFAULT {col.default_value}" if col.default_value is not None else ""
-        )
         unique = " UNIQUE" if col.unique else ""
+
         if col.primary_key != PrimaryKey.NONE:
             match col.primary_key:
                 case PrimaryKey.AUTO_INCREMENT:
@@ -40,6 +38,7 @@ def generate_sql_script(table_name: str, columns: list[Column]):
                 #     sql_type = "UUID PRIMARY KEY DEFAULT gen_random_uuid()"
                 case _:
                     raise ValueError(f"Unsupported primary key type: {col.primary_key}")
+            default = ""  # Do not set default for primary key
         else:
             if col.default_value is not None:
                 if isinstance(col.default_value, str):
@@ -48,20 +47,18 @@ def generate_sql_script(table_name: str, columns: list[Column]):
                     default = f" DEFAULT {'TRUE' if col.default_value else 'FALSE'}"
                 else:
                     default = f" DEFAULT {col.default_value}"
+            else:
+                default = ""
 
         column_defs.append(f"    {col.name} {sql_type}{nullable}{default}{unique}")
 
     column_defs_str = ",\n".join(column_defs)
 
     script = f"""
-DROP TABLE IF EXISTS {table_name};
-##
-DROP TRIGGER IF EXISTS {table_name}_update_timestamp ON {table_name};
-##
-DROP TRIGGER IF EXISTS {table_name}_update ON {table_name};
+DROP TABLE IF EXISTS {table_name} CASCADE;
 ##
 CREATE TABLE {table_name} (
-    {column_defs_str},
+{column_defs_str},
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
@@ -78,5 +75,21 @@ CREATE TRIGGER {table_name}_update
 BEFORE UPDATE ON {table_name}
 FOR EACH ROW EXECUTE FUNCTION {table_name}_update_trigger();
 """
-    log.info(script)
     return script
+
+
+def generate_foreign_key_script(
+    table_name: str, columns: list[Column], input_name: str
+):
+    """Generates SQL script for adding foreign key constraints to a table."""
+    foreign_key_statements = []
+    for col in columns:
+        if col.foreign_key:
+            fk_script = f"""
+ALTER TABLE {table_name}
+ADD CONSTRAINT fk_{table_name}_{col.name}
+FOREIGN KEY ({col.name}) REFERENCES {input_name}_{col.foreign_key.table}({col.foreign_key.column});
+##"""
+            foreign_key_statements.append(fk_script)
+
+    return "".join(foreign_key_statements)

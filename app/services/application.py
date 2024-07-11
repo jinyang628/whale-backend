@@ -16,6 +16,7 @@ from app.models.application import (
     Table,
 )
 from app.stores.base.main import generate_client_table
+from app.stores.sqls.template import generate_foreign_key_script
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class ApplicationService:
         self, input: PostApplicationRequest
     ) -> PostApplicationResponse:
         """Generates the client application."""
+        # Step 1: Create tables
         for table in input.tables:
             # Prefix application name so that the table name remains unique amidst other client applications. Client application name is enforced to be unique
             table_name = f"{input.name}_{table.name}"
@@ -49,15 +51,27 @@ class ApplicationService:
                 db_url=EXTERNAL_DATABASE_URL,
             )
 
+        # Step 2: Add foreign key constraints
+        for table in input.tables:
+            table_name = f"{input.name}_{table.name}"
+            foreign_key_script = generate_foreign_key_script(
+                input_name=input.name, table_name=table_name, columns=table.columns
+            )
+            if foreign_key_script:
+                await generate_client_table(
+                    table_name=table_name,
+                    columns=table.columns,
+                    db_url=EXTERNAL_DATABASE_URL,
+                    sql_script=foreign_key_script,
+                )
+
     async def select(
         self, input: SelectApplicationRequest
     ) -> Optional[SelectApplicationResponse]:
         """Selects the entry from the application table."""
         orm = Orm(url=INTERNAL_DATABASE_URL)
         result: list[Application] = await orm.get_application(
-            orm_model=ApplicationORM, 
-            pydantic_model=Application,
-            names=[input.name]
+            orm_model=ApplicationORM, pydantic_model=Application, names=[input.name]
         )
         if len(result) != 1:
             return None
@@ -65,6 +79,6 @@ class ApplicationService:
         app: Application = result[0]
         application_content = ApplicationContent(
             name=app.name,
-            tables=[Table.model_validate(table) for table in json.loads(app.tables)]
+            tables=[Table.model_validate(table) for table in json.loads(app.tables)],
         )
         return SelectApplicationResponse(application=application_content)

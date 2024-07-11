@@ -17,6 +17,11 @@ class PrimaryKey(StrEnum):
     AUTO_INCREMENT = "auto_increment"
 
 
+class ForeignKey(BaseModel):
+    table: str
+    column: str
+
+
 class Column(BaseModel):
     name: str
     data_type: DataType
@@ -24,6 +29,7 @@ class Column(BaseModel):
     nullable: bool = False
     default_value: Optional[Any] = None
     unique: Optional[bool] = False
+    foreign_key: Optional[ForeignKey] = None
 
     @model_validator(mode="before")
     @classmethod

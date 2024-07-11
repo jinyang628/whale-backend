@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Any, Literal, Union
 from pydantic import BaseModel, Field
 
 from app.models.application import Table
@@ -17,7 +17,8 @@ class ReverseActionDelete(ReverseAction):
 
 class ReverseActionUpdate(ReverseAction):
     action_type: Literal["update"] = "update"
-    reverse_updated_data: list[dict[Any, dict]]
+    reverse_filter_conditions: list[dict[str, Any]]
+    reverse_updated_data: list[dict[str, Any]]
     target_table: Table
     application_name: str
     

@@ -73,42 +73,73 @@ class MessageService:
         self,
         input: ReverseActionWrapper
     ):
+        orm = Orm(url=EXTERNAL_DATABASE_URL)
+        table_orm_model: Type[DeclarativeMeta] = create_dynamic_orm(
+            table=input.action.target_table,
+            application_name=input.action.application_name
+        )
         match input.action.action_type:
             case "delete":
                 await _reverse_with_delete(
-                    ids=input.action.ids, 
-                    table_orm_model=input.action.table_orm_model
+                    orm=orm,
+                    table_orm_model=table_orm_model,
+                    ids=input.action.ids
                 )
             case "get":
                 pass
-            # case "post":
-            #     await _reverse_with_post(
-            #         deleted_data=input.action.deleted_data,
-            #         table_orm_model=input.action.table_orm_model
-            #     )
-            # case "update":
-            #     await _reverse_with_put(
-            #         reverse_updated_data=input.action.reverse_updated_data,
-            #         table_orm_model=input.action.table_orm_model
-            #     )
-            # case _:
-            #     raise TypeError("Invalid action type when trying to reverse inferenec response")
+            case "post":
+                await _reverse_with_post(
+                    orm=orm,
+                    table_orm_model=table_orm_model,
+                    deleted_data=input.action.deleted_data
+                )
+            case "update":
+                await _reverse_with_put(
+                    orm=orm,
+                    table_orm_model=table_orm_model,
+                    reverse_filter_conditions=input.action.reverse_filter_conditions,
+                    reverse_updated_data=input.action.reverse_updated_data
+                )
+            case _:
+                raise TypeError("Invalid action type when trying to reverse inferenec response")
 
 ###
 ### REVERSE SECTION
 ###
 async def _reverse_with_delete(
+    orm: Orm,
+    table_orm_model: Type[DeclarativeMeta],
     ids: list[Any],
-    table_orm_model: Type[DeclarativeMeta]
 ):
-    orm = Orm(url=EXTERNAL_DATABASE_URL)
     await orm.delete_inference_result(
         model=table_orm_model, 
-        filter_conditions=[{"id": id} for id in ids],
+        filter_conditions=[{"column_name": "id", "column_value": id} for id in ids],
         is_and=False
     )
     
-
+async def _reverse_with_post(
+    orm: Orm,
+    table_orm_model: Type[DeclarativeMeta],
+    deleted_data: list[dict[str, Any]]
+):
+    await orm.post(
+        model=table_orm_model, 
+        data=deleted_data
+    )
+    
+async def _reverse_with_put(
+    orm: Orm,
+    table_orm_model: Type[DeclarativeMeta],
+    reverse_filter_conditions: list[dict[str, Any]],
+    reverse_updated_data: list[dict[str, Any]]
+):
+    for filter_conditions, updated_data in zip(reverse_filter_conditions, reverse_updated_data):
+        await orm.update_inference_result(
+            model=table_orm_model,
+            filter_conditions=[filter_conditions],
+            updated_data=[updated_data]
+        )
+    
 ###
 ### INFERENCE SECTION
 ###
@@ -130,8 +161,7 @@ async def _execute(
             
         table_orm_model: Type[DeclarativeMeta] = create_dynamic_orm(
             table=target_table,
-            application_name=http_method_response.application.name,
-
+            application_name=http_method_response.application.name
         )
         filter_dict: Optional[dict] = None
         if http_method_response.filter_conditions:
@@ -196,7 +226,6 @@ async def _execute_post_method(
         data=http_method_response.inserted_rows
     )
     response_message_content: str = f"The following row(s) has been inserted into the {target_table.name} table of {http_method_response.application.name}:\n{json.dumps(http_method_response.inserted_rows, indent=4)}\n"
-    print(type(table_orm_model))
     return response_message_content, ReverseActionDelete(ids=ids, target_table=target_table, application_name=application_name)
 
 async def _execute_put_method(
@@ -207,13 +236,16 @@ async def _execute_put_method(
     filter_dict: dict,
     application_name: str
 ) -> tuple[str, ReverseActionUpdate]:
-    updated_results, reverse_updated_data = await orm.update_inference_result(
+    updated_results, reverse_filter_conditions, reverse_updated_data = await orm.update_inference_result(
         model=table_orm_model, 
         filter_conditions=http_method_response.filter_conditions,
         updated_data=http_method_response.updated_data
     )
     response_message_content: str = f"The following {len(updated_results)} row(s) have been updated in the {target_table.name} table of {http_method_response.application.name} by filtering {json.dumps(filter_dict)}:\n{json.dumps(updated_results, indent=4)}\n"
-    return response_message_content, ReverseActionUpdate(reverse_updated_data=reverse_updated_data, target_table=target_table, application_name=application_name)
+    return response_message_content, ReverseActionUpdate(
+        reverse_filter_conditions=reverse_filter_conditions, reverse_updated_data=reverse_updated_data, 
+        target_table=target_table, application_name=application_name
+        )
 
 async def _execute_delete_method(
     orm: Orm, 

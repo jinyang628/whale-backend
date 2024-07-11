@@ -134,6 +134,11 @@ class Orm:
         filter_conditions: list[dict[str, str]], 
         is_and: bool = True,
     ) -> list[dict[Any, dict]]:
+        
+        print(model)
+        print(filter_conditions)
+        print(is_and)
+        
         """Deletes entries from the specified table based on the filters provided.
 
         Args:
@@ -175,7 +180,7 @@ class Orm:
         filter_conditions: list[dict[str, str]], 
         updated_data: list[dict[str, Any]], 
         is_and: bool = True
-    ) -> tuple[list[dict[str, Any]], list[dict[Any, dict]]]:
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
         """Updates entries in the specified table based on the filters provided.
 
         Args:
@@ -208,7 +213,7 @@ class Orm:
             for row in original_rows:
                 original_dict = {column.name: getattr(row, column.name) for column in model.__table__.columns}
                 original_results.append(original_dict)
-                reverse_filter_conditions.append({"column_name": "id", "column_value": str(row.id)})
+                reverse_filter_conditions.append({"column_name": "id", "column_value": row.id})
             
             # Perform the update
             update_values = {item['column_name']: item['column_value'] for item in updated_data}
@@ -232,9 +237,8 @@ class Orm:
         for original, updated in zip(original_results, updated_results):
             for key, value in updated.items():
                 if original[key] != value:
-                    reverse_updated_data.append({original["id"]: {"column_name": key, "column_value": original[key]}})
-        
-        return updated_results, reverse_updated_data
+                    reverse_updated_data.append({"column_name": key, "column_value": original[key]})
+        return updated_results, reverse_filter_conditions, reverse_updated_data
     
     ### Miscellaneous ###
     def get_column(self, model: Type[DeclarativeMeta], column: str, filters: dict, is_and: bool = True, batch_size: int = 6500) -> list[Any]:

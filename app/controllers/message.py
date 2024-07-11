@@ -49,7 +49,6 @@ class MessageController:
                     reverse_stack=input.reverse_stack,
                     inference_response=inference_response
                 )
-                print(result)
                 return JSONResponse(
                     status_code=200, content=result.model_dump()
                 )
@@ -66,9 +65,10 @@ class MessageController:
         @router.post("/reverse")
         async def reverse(input: ReverseActionWrapper) -> JSONResponse:
             try:
-                print(input)
-                print("error")
                 await self.service.reverse_inference_response(input=input)
+                return JSONResponse(
+                    status_code=200, content={"message": "Success"}
+                )
             except ValidationError as e:
                 log.error("Validation error: %s", str(e))
                 return HTTPException(status_code=422, detail=str(e))

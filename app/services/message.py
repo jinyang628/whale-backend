@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import os
@@ -13,6 +14,7 @@ from app.models.message import Message, PostMessageResponse, Role
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.dynamic import create_dynamic_orm
 from app.models.reverse import ReverseActionDelete, ReverseActionGet, ReverseActionPost, ReverseActionWrapper, ReverseActionUpdate
+from app.stores.utils.process import process_rows_to_insert
 
 log = logging.getLogger(__name__)
 
@@ -221,10 +223,21 @@ async def _execute_post_method(
     target_table: Table,
     application_name: str
 ) -> tuple[str, ReverseActionDelete]:
+    
+    copied_rows: list[dict[str, Any]] = copy.deepcopy(http_method_response.inserted_rows)
+    
+    # For now, the rows to insert need not be the same as the rows to return to frontend (typing issue -> we cant serialise datetime objects in API request)
+    rows_to_insert: list[dict[str, Any]] = process_rows_to_insert(
+        table=target_table,
+        rows=copied_rows
+    )
+    print("error arrives here")
+    print(rows_to_insert)
     ids: list[Any] = await orm.post(
         model=table_orm_model, 
-        data=http_method_response.inserted_rows
+        data=rows_to_insert
     )
+
     response_message_content: str = f"The following row(s) has been inserted into the {target_table.name} table of {http_method_response.application.name}:\n{json.dumps(http_method_response.inserted_rows, indent=4)}\n"
     return response_message_content, ReverseActionDelete(ids=ids, target_table=target_table, application_name=application_name)
 

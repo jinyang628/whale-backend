@@ -12,6 +12,8 @@ def get_sql_type(data_type: DataType) -> str:
         DataType.INTEGER: "INTEGER",
         DataType.FLOAT: "REAL",
         DataType.BOOLEAN: "BOOLEAN",
+        DataType.DATE: "DATE",
+        DataType.DATETIME: "TIMESTAMP",
         DataType.UUID: "UUID",
     }
     return sql_type_map[data_type]
@@ -55,25 +57,9 @@ def generate_table_creation_script(table_name: str, columns: list[Column]):
     script = f"""
 DROP TABLE IF EXISTS {table_name} CASCADE;
 ##
-DROP TRIGGER IF EXISTS {table_name}_update ON {table_name};
-##
 CREATE TABLE {table_name} (
-{column_defs_str},
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+{column_defs_str}
 );
-##
-CREATE OR REPLACE FUNCTION {table_name}_update_trigger()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-##
-CREATE TRIGGER {table_name}_update
-BEFORE UPDATE ON {table_name}
-FOR EACH ROW EXECUTE FUNCTION {table_name}_update_trigger();
 """
     return script
 

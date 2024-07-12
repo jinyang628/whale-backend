@@ -134,11 +134,6 @@ class Orm:
         filter_conditions: list[dict[str, str]], 
         is_and: bool = True,
     ) -> list[dict[Any, dict]]:
-        
-        print(model)
-        print(filter_conditions)
-        print(is_and)
-        
         """Deletes entries from the specified table based on the filters provided.
 
         Args:

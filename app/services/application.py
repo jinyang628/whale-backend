@@ -81,7 +81,6 @@ class ApplicationService:
         )
         if len(result) != 1:
             return None
-        print(result)
         app: Application = result[0]
         application_content = ApplicationContent(
             name=app.name,

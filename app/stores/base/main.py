@@ -1,6 +1,4 @@
 import logging
-from app.models.application import Column
-from app.stores.sqls.template import generate_table_creation_script
 import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine
 

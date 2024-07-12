@@ -1,6 +1,6 @@
 import logging
 from app.models.application import Column
-from app.stores.sqls.template import generate_sql_script
+from app.stores.sqls.template import generate_table_creation_script
 import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine
 
@@ -9,13 +9,9 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-async def generate_client_table(
-    table_name: str, columns: list[Column], db_url: str, sql_script: str = None
+async def execute_client_script(
+    table_name: str, db_url: str, sql_script: str
 ):
-    """Generates a single client table or executes provided SQL script."""
-    if sql_script is None:
-        sql_script = generate_sql_script(table_name=table_name, columns=columns)
-
     sql_statements = sql_script.split("##")
 
     engine = create_async_engine(db_url)

@@ -19,9 +19,7 @@ def get_sql_type(data_type: DataType) -> str:
 # TODO: Implement some sort of versioning system so clients can update their tables without breaking the application/dropping the entire table
 # TODO: Implement unique constraints that can be controlled by clients when creating applications
 
-
-## continue from here for unique logic
-def generate_sql_script(table_name: str, columns: list[Column]):
+def generate_table_creation_script(table_name: str, columns: list[Column]):
     """Generates SQL script for creating a table."""
     column_defs = []
     for col in columns:
@@ -56,6 +54,8 @@ def generate_sql_script(table_name: str, columns: list[Column]):
 
     script = f"""
 DROP TABLE IF EXISTS {table_name} CASCADE;
+##
+DROP TRIGGER IF EXISTS {table_name}_update ON {table_name};
 ##
 CREATE TABLE {table_name} (
 {column_defs_str},

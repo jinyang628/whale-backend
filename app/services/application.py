@@ -15,8 +15,8 @@ from app.models.application import (
     SelectApplicationResponse,
     Table,
 )
-from app.stores.base.main import generate_client_table
-from app.stores.sqls.template import generate_foreign_key_script
+from app.stores.base.main import execute_client_script
+from app.stores.sqls.template import generate_foreign_key_script, generate_table_creation_script
 
 log = logging.getLogger(__name__)
 
@@ -45,25 +45,31 @@ class ApplicationService:
             table_name = f"{input.name}_{table.name}"
             # For input of inference, we will GET table description from the internal database, and the table name and columns from the client database
             # For output of inference, we will simply modify the entries in the client database associated with the user's API key
-            await generate_client_table(
+            table_script: str = generate_table_creation_script(
+                table_name=table_name, 
+                columns=table.columns
+            )
+            await execute_client_script(
                 table_name=table_name,
-                columns=table.columns,
                 db_url=EXTERNAL_DATABASE_URL,
+                sql_script=table_script,
             )
 
         # Step 2: Add foreign key constraints
         for table in input.tables:
             table_name = f"{input.name}_{table.name}"
             foreign_key_script = generate_foreign_key_script(
-                input_name=input.name, table_name=table_name, columns=table.columns
+                input_name=input.name, 
+                table_name=table_name, 
+                columns=table.columns
             )
-            if foreign_key_script:
-                await generate_client_table(
-                    table_name=table_name,
-                    columns=table.columns,
-                    db_url=EXTERNAL_DATABASE_URL,
-                    sql_script=foreign_key_script,
-                )
+            if not foreign_key_script:
+                continue
+            await execute_client_script(
+                table_name=table_name,
+                db_url=EXTERNAL_DATABASE_URL,
+                sql_script=foreign_key_script,
+            )
 
     async def select(
         self, input: SelectApplicationRequest

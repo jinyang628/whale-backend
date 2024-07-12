@@ -1,6 +1,6 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import registry
-from sqlalchemy import Boolean, Float, Integer, String, Table as SQLAlchemyTable, Column as SQLAlchemyColumn
+from sqlalchemy import UUID, Boolean, Date, DateTime, Float, Integer, String, Table as SQLAlchemyTable, Column as SQLAlchemyColumn
 
 from app.models.application import DataType, PrimaryKey, Table
 
@@ -48,11 +48,13 @@ def create_dynamic_orm(table: Table, application_name: str):
 
     return orm_class
 
-# TODO: Update the mapping when more types are allowed 
 def _get_sqlalchemy_type(data_type: DataType):
     return {
         DataType.STRING: String,
         DataType.INTEGER: Integer,
         DataType.FLOAT: Float,
         DataType.BOOLEAN: Boolean,
+        DataType.DATE: Date,
+        DataType.DATETIME: DateTime,
+        DataType.UUID: UUID,
     }.get(data_type, String)

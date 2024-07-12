@@ -12,6 +12,7 @@ def get_sql_type(data_type: DataType) -> str:
         DataType.INTEGER: "INTEGER",
         DataType.FLOAT: "REAL",
         DataType.BOOLEAN: "BOOLEAN",
+        DataType.UUID: "UUID",
     }
     return sql_type_map[data_type]
 
@@ -31,9 +32,8 @@ def generate_table_creation_script(table_name: str, columns: list[Column]):
             match col.primary_key:
                 case PrimaryKey.AUTO_INCREMENT:
                     sql_type = "INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY"
-                # TODO: Implement UUID condition
-                # case PrimaryKey.UUID:
-                #     sql_type = "UUID PRIMARY KEY DEFAULT gen_random_uuid()"
+                case PrimaryKey.UUID:
+                    sql_type = "UUID PRIMARY KEY DEFAULT gen_random_uuid()"
                 case _:
                     raise ValueError(f"Unsupported primary key type: {col.primary_key}")
             default = ""  # Do not set default for primary key

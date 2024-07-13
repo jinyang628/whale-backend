@@ -14,7 +14,7 @@ from app.models.message import Message, PostMessageResponse, Role
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.dynamic import create_dynamic_orm
 from app.models.reverse import ReverseActionDelete, ReverseActionGet, ReverseActionPost, ReverseActionWrapper, ReverseActionUpdate
-from app.stores.utils.process import process_rows_to_insert
+from app.stores.utils.process import process_filter_dict, process_rows_to_insert, process_rows_to_return
 
 log = logging.getLogger(__name__)
 
@@ -75,6 +75,9 @@ class MessageService:
         self,
         input: ReverseActionWrapper
     ):
+        if input.action.action_type == "get":
+            return
+        
         orm = Orm(url=EXTERNAL_DATABASE_URL)
         table_orm_model: Type[DeclarativeMeta] = create_dynamic_orm(
             table=input.action.target_table,
@@ -87,8 +90,6 @@ class MessageService:
                     table_orm_model=table_orm_model,
                     ids=input.action.ids
                 )
-            case "get":
-                pass
             case "post":
                 await _reverse_with_post(
                     orm=orm,
@@ -200,7 +201,7 @@ async def _execute(
                 message_content, reverse_action = await _execute_get_method(
                     orm=orm,
                     table_orm_model=table_orm_model,
-                    http_method_response=http_method_response,
+                    application_name=http_method_response.application.name,
                     target_table=target_table,
                     filter_dict=filter_dict
                 )
@@ -231,8 +232,7 @@ async def _execute_post_method(
         table=target_table,
         rows=copied_rows
     )
-    print("error arrives here")
-    print(rows_to_insert)
+
     ids: list[Any] = await orm.post(
         model=table_orm_model, 
         data=rows_to_insert
@@ -251,7 +251,7 @@ async def _execute_put_method(
 ) -> tuple[str, ReverseActionUpdate]:
     updated_results, reverse_filter_conditions, reverse_updated_data = await orm.update_inference_result(
         model=table_orm_model, 
-        filter_conditions=http_method_response.filter_conditions,
+        filters=filter_dict,
         updated_data=http_method_response.updated_data
     )
     response_message_content: str = f"The following {len(updated_results)} row(s) have been updated in the {target_table.name} table of {http_method_response.application.name} by filtering {json.dumps(filter_dict)}:\n{json.dumps(updated_results, indent=4)}\n"
@@ -280,13 +280,29 @@ async def _execute_delete_method(
 async def _execute_get_method(
     orm: Orm, 
     table_orm_model: Type[DeclarativeMeta], 
-    http_method_response: HttpMethodResponse,
+    application_name: str,
     target_table: Table,
-    filter_dict: dict
+    filter_dict: dict[str, Any]
 ) -> tuple[str, ReverseActionGet]:
-    rows: list[dict[str, Any]] = await orm.get_inference_result(
-        orm_model=table_orm_model,
-        filters=http_method_response.filter_conditions,
+    
+    copied_filter_dict: list[dict[str, Any]] = copy.deepcopy(filter_dict)
+
+    copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_filter_dict(
+        table=target_table,
+        filter_dict=copied_filter_dict
     )
-    response_message_content: str = f"The following row(s) have been retrieved from the {target_table.name} table of {http_method_response.application.name} by filtering {json.dumps(filter_dict)}:\n{json.dumps(rows, indent=4)}\n"
+    
+    rows: list[dict[str, Any]] = await orm.get_inference_result(
+        model=table_orm_model,
+        filters=copied_filter_dict,
+    )
+    
+    rows = process_rows_to_return(
+        rows=rows,
+        datetime_column_names_to_process=datetime_column_names_to_process,
+        date_column_names_to_process=date_column_names_to_process
+    )
+
+    response_message_content: str = f"The following row(s) have been retrieved from the {target_table.name} table of {application_name} by filtering {json.dumps(filter_dict)}:\n{json.dumps(rows, indent=4)}\n"
+
     return response_message_content, ReverseActionGet()

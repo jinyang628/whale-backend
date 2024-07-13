@@ -78,8 +78,8 @@ class Orm:
     
     async def get_inference_result(
         self, 
-        orm_model: Type[DeclarativeMeta], 
-        filters: list[dict[str, str]], 
+        model: Type[DeclarativeMeta], 
+        filters: dict[str, Any], 
         is_and: bool = True, 
         batch_size: int = 6500
     ) -> list[dict[str, Any]]:
@@ -99,10 +99,10 @@ class Orm:
         
         async with self.sessionmaker() as session:
             while True:
-                query = select(orm_model)
+                query = select(model)
                 if filters:
                     condition = and_ if is_and else or_                        
-                    query_filter = condition(*[getattr(orm_model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filters])
+                    query_filter = condition(*[getattr(model, column_name) == column_value for column_name, column_value in filters.items()])
                     query = query.filter(query_filter)
                 
                 query = query.limit(batch_size).offset(offset)
@@ -172,7 +172,7 @@ class Orm:
     async def update_inference_result(
         self, 
         model: Type[DeclarativeMeta], 
-        filter_conditions: list[dict[str, str]], 
+        filters: dict[str, Any], 
         updated_data: list[dict[str, Any]], 
         is_and: bool = True
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
@@ -180,7 +180,7 @@ class Orm:
 
         Args:
             model (Type[DeclarativeMeta]): The SQLAlchemy model to update data of.
-            filter_conditions (list[dict]): The filters to apply to the query.
+            filters (dict): The filters to apply to the query.
             updated_data (list[dict]): The updates to apply to the target rows.
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
 
@@ -197,7 +197,7 @@ class Orm:
         
         async with self.sessionmaker() as session:
             condition = and_ if is_and else or_
-            query_filter = condition(*[getattr(model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filter_conditions])
+            query_filter = condition(*[getattr(model, column_name) == column_value for column_name, column_value in filters.items()])
             
             # Fetch the original rows before update
             select_stmt = select(model).where(query_filter)

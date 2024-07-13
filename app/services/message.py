@@ -14,7 +14,7 @@ from app.models.message import Message, PostMessageResponse, Role
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.dynamic import create_dynamic_orm
 from app.models.reverse import ReverseActionDelete, ReverseActionGet, ReverseActionPost, ReverseActionWrapper, ReverseActionUpdate
-from app.stores.utils.process import process_filter_dict, process_rows_to_insert, process_rows_to_return
+from app.stores.utils.process import process_client_facing_dict, process_db_facing_dict, process_db_facing_rows, process_client_facing_rows
 
 log = logging.getLogger(__name__)
 
@@ -169,6 +169,8 @@ async def _execute(
         filter_dict: Optional[dict] = None
         if http_method_response.filter_conditions:
             filter_dict = {cond['column_name']: cond['column_value'] for cond in http_method_response.filter_conditions}
+        if http_method_response.updated_data:
+            update_dict = {cond['column_name']: cond['column_value'] for cond in http_method_response.updated_data}
             
         match http_method_response.http_method:
             case HttpMethod.POST:
@@ -183,9 +185,9 @@ async def _execute(
                 message_content, reverse_action = await _execute_put_method(
                     orm=orm,
                     table_orm_model=table_orm_model,
-                    http_method_response=http_method_response,
                     target_table=target_table,
                     filter_dict=filter_dict,
+                    update_dict=update_dict,
                     application_name=http_method_response.application.name
                 )
             case HttpMethod.DELETE:
@@ -228,9 +230,9 @@ async def _execute_post_method(
     copied_rows: list[dict[str, Any]] = copy.deepcopy(http_method_response.inserted_rows)
     
     # For now, the rows to insert need not be the same as the rows to return to frontend (typing issue -> we cant serialise datetime objects in API request)
-    rows_to_insert: list[dict[str, Any]] = process_rows_to_insert(
+    rows_to_insert: list[dict[str, Any]] = process_db_facing_rows(
         table=target_table,
-        rows=copied_rows
+        client_rows=copied_rows
     )
 
     ids: list[Any] = await orm.post(
@@ -244,19 +246,51 @@ async def _execute_post_method(
 async def _execute_put_method(
     orm: Orm, 
     table_orm_model: Type[DeclarativeMeta], 
-    http_method_response: HttpMethodResponse,
     target_table: Table,
     filter_dict: dict,
+    update_dict: dict,
     application_name: str
 ) -> tuple[str, ReverseActionUpdate]:
-    updated_results, reverse_filter_conditions, reverse_updated_data = await orm.update_inference_result(
-        model=table_orm_model, 
-        filters=filter_dict,
-        updated_data=http_method_response.updated_data
+    copied_filter_dict: list[dict[str, Any]] = copy.deepcopy(filter_dict)
+    copied_update_dict: list[dict[str, Any]] = copy.deepcopy(update_dict)
+    
+    copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_dict(
+        table=target_table,
+        client_dict=copied_filter_dict
     )
-    response_message_content: str = f"The following {len(updated_results)} row(s) have been updated in the {target_table.name} table of {http_method_response.application.name} by filtering {json.dumps(filter_dict)}:\n{json.dumps(updated_results, indent=4)}\n"
+    
+    copied_update_dict, _, _ = process_db_facing_dict(
+        table=target_table,
+        client_dict=copied_update_dict
+    )
+    
+    updated_results, reverse_filters, reverse_updated_data = await orm.update_inference_result(
+        model=table_orm_model, 
+        filters=copied_filter_dict,
+        updated_data=copied_update_dict
+    )
+    
+    updated_results = process_client_facing_rows(
+        db_rows=updated_results,
+        datetime_column_names_to_process=datetime_column_names_to_process,
+        date_column_names_to_process=date_column_names_to_process
+    )
+    
+    reverse_filters = process_client_facing_dict(
+        db_dict=reverse_filters,
+        datetime_column_names_to_process=datetime_column_names_to_process,
+        date_column_names_to_process=date_column_names_to_process
+    )
+    
+    reverse_updated_data = process_client_facing_dict(
+        db_dict=reverse_updated_data,
+        datetime_column_names_to_process=datetime_column_names_to_process,
+        date_column_names_to_process=date_column_names_to_process
+    )
+    
+    response_message_content: str = f"The following {len(updated_results)} row(s) have been updated in the {target_table.name} table of {application_name} by filtering {json.dumps(filter_dict)}:\n{json.dumps(updated_results, indent=4)}\n"
     return response_message_content, ReverseActionUpdate(
-        reverse_filter_conditions=reverse_filter_conditions, reverse_updated_data=reverse_updated_data, 
+        reverse_filter_conditions=reverse_filters, reverse_updated_data=reverse_updated_data, 
         target_table=target_table, application_name=application_name
         )
 
@@ -287,9 +321,9 @@ async def _execute_get_method(
     
     copied_filter_dict: list[dict[str, Any]] = copy.deepcopy(filter_dict)
 
-    copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_filter_dict(
+    copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_dict(
         table=target_table,
-        filter_dict=copied_filter_dict
+        client_dict=copied_filter_dict
     )
     
     rows: list[dict[str, Any]] = await orm.get_inference_result(
@@ -297,8 +331,8 @@ async def _execute_get_method(
         filters=copied_filter_dict,
     )
     
-    rows = process_rows_to_return(
-        rows=rows,
+    rows = process_client_facing_rows(
+        db_rows=rows,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process
     )

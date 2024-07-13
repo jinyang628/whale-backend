@@ -173,15 +173,15 @@ class Orm:
         self, 
         model: Type[DeclarativeMeta], 
         filters: dict[str, Any], 
-        updated_data: list[dict[str, Any]], 
+        updated_data: dict[str, Any], 
         is_and: bool = True
-    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    ) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
         """Updates entries in the specified table based on the filters provided.
 
         Args:
             model (Type[DeclarativeMeta]): The SQLAlchemy model to update data of.
             filters (dict): The filters to apply to the query.
-            updated_data (list[dict]): The updates to apply to the target rows.
+            updated_data (dict): The updates to apply to the target rows.
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
 
         Returns:
@@ -193,7 +193,7 @@ class Orm:
         
         updated_results: list[dict[str, Any]] = []
         original_results: list[dict[str, Any]] = []
-        reverse_filter_conditions: list[dict[str, str]] = []
+        reverse_filters: list[dict[str, str]] = []
         
         async with self.sessionmaker() as session:
             condition = and_ if is_and else or_
@@ -208,10 +208,10 @@ class Orm:
             for row in original_rows:
                 original_dict = {column.name: getattr(row, column.name) for column in model.__table__.columns}
                 original_results.append(original_dict)
-                reverse_filter_conditions.append({"column_name": "id", "column_value": row.id})
+                reverse_filters.append({"id": row.id})
             
             # Perform the update
-            update_values = {item['column_name']: item['column_value'] for item in updated_data}
+            update_values = {key: value for key, value in updated_data.items()}
             update_stmt = update(model).where(query_filter).values(**update_values)
             await session.execute(update_stmt)
             await session.commit()
@@ -232,8 +232,8 @@ class Orm:
         for original, updated in zip(original_results, updated_results):
             for key, value in updated.items():
                 if original[key] != value:
-                    reverse_updated_data.append({"column_name": key, "column_value": original[key]})
-        return updated_results, reverse_filter_conditions, reverse_updated_data
+                    reverse_updated_data.append({key: original[key]})
+        return updated_results, reverse_filters, reverse_updated_data
     
     ### Miscellaneous ###
     def get_column(self, model: Type[DeclarativeMeta], column: str, filters: dict, is_and: bool = True, batch_size: int = 6500) -> list[Any]:

@@ -6,32 +6,56 @@ from dateutil import parser
 from app.models.application import DataType, Table
 
 
-def process_rows_to_insert(
+def process_db_facing_rows(
     table: Table,
-    rows: list[dict[str, Any]]
+    client_rows: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
 
     datetime_column_names_to_process, date_column_names_to_process = _identify_columns_to_process(
         table=table
     )
     
-    rows = _process_datetime_values_of_row(rows=rows, column_names_to_process=datetime_column_names_to_process)
-    rows = _process_date_values_of_row(rows=rows, column_names_to_process=date_column_names_to_process)
-    return rows
+    client_rows = _process_datetime_values_of_row(rows=client_rows, column_names_to_process=datetime_column_names_to_process)
+    client_rows = _process_date_values_of_row(rows=client_rows, column_names_to_process=date_column_names_to_process)
+    return client_rows
     
-def process_filter_dict(
+def process_db_facing_dict(
     table: Table,
-    filter_dict: dict[str, Any]
+    client_dict: dict[str, Any]
 ) -> tuple[dict[str, Any], list[str], list[str]]:
     datetime_column_names_to_process, date_column_names_to_process = _identify_columns_to_process(
         table=table
     )
     
-    filter_dict = _process_datetime_values_of_dict(filter_dict=filter_dict, column_names_to_process=datetime_column_names_to_process)
-    filter_dict = _process_date_values_of_dict(filter_dict=filter_dict, column_names_to_process=date_column_names_to_process)
+    client_dict = _process_datetime_values_of_dict(dict_to_process=client_dict, column_names_to_process=datetime_column_names_to_process)
+    client_dict = _process_date_values_of_dict(dict_to_process=client_dict, column_names_to_process=date_column_names_to_process)
     
-    return filter_dict, datetime_column_names_to_process, date_column_names_to_process
+    return client_dict, datetime_column_names_to_process, date_column_names_to_process
     
+def process_client_facing_rows(
+    db_rows: list[dict[str, Any]],
+    datetime_column_names_to_process: list[str],
+    date_column_names_to_process: list[str]
+) -> list[dict[str, Any]]:
+    for name in datetime_column_names_to_process + date_column_names_to_process:
+        for row in db_rows:
+            if value := row.get(name):
+                if not value:
+                    continue
+                row[name] = value.isoformat()
+    return db_rows
+       
+def process_client_facing_dict(
+    db_dict: dict[str, Any],
+    datetime_column_names_to_process: list[str],
+    date_column_names_to_process: list[str]
+) -> dict[str, Any]:
+    for name in datetime_column_names_to_process + date_column_names_to_process:
+        if name in db_dict and db_dict[name]:
+            db_dict[name] = db_dict[name].isoformat()
+    return db_dict
+                
+
 def _identify_columns_to_process(table: Table):
     datetime_column_names_to_process: list[str] = []
     date_column_names_to_process: list[str] = []
@@ -71,40 +95,29 @@ def _process_date_values_of_row(rows: list[dict[str, Any]], column_names_to_proc
     return modified_rows
 
 def _process_datetime_values_of_dict(
-    filter_dict: dict[str, Any], 
+    dict_to_process: dict[str, Any], 
     column_names_to_process: list[str]
 ) -> dict[str, Any]:
     for column_name in column_names_to_process:
-        if column_name not in filter_dict:
+        if column_name not in dict_to_process:
             continue 
-        if not filter_dict[column_name]:
+        if not dict_to_process[column_name]:
             continue 
-        filter_dict[column_name] = parser.parse(filter_dict[column_name])
+        dict_to_process[column_name] = parser.parse(dict_to_process[column_name])
         
-    return filter_dict
+    return dict_to_process
 
 def _process_date_values_of_dict(
-    filter_dict: dict[str, Any], 
+    dict_to_process: dict[str, Any], 
     column_names_to_process: list[str]
 ) -> dict[str, Any]:
     for column_name in column_names_to_process:
-        if column_name not in filter_dict:
+        if column_name not in dict_to_process:
             continue 
-        if not filter_dict[column_name]:
+        if not dict_to_process[column_name]:
             continue 
-        filter_dict[column_name] = parser.parse(filter_dict[column_name]).date()
+        dict_to_process[column_name] = parser.parse(dict_to_process[column_name]).date()
         
-    return filter_dict
+    return dict_to_process
 
-def process_rows_to_return(
-    rows: list[dict[str, Any]],
-    datetime_column_names_to_process: list[str],
-    date_column_names_to_process: list[str]
-) -> list[dict[str, Any]]:
-    for name in datetime_column_names_to_process + date_column_names_to_process:
-        for row in rows:
-            if value := row.get(name):
-                if isinstance(value, (date, datetime)):
-                    row[name] = value.isoformat()
-    return rows
-                
+

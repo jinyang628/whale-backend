@@ -9,7 +9,6 @@ from app.exceptions.exception import DatabaseError
 from app.models.application import (
     PostApplicationRequest,
     PostApplicationResponse,
-    SelectApplicationRequest,
     SelectApplicationResponse,
 )
 from app.services.application import ApplicationService
@@ -49,10 +48,10 @@ class ApplicationController:
                 ) from e
 
         @router.get("/select")
-        async def select(input: SelectApplicationRequest) -> JSONResponse:
+        async def select(name: str) -> JSONResponse:
             try:
                 response: Optional[SelectApplicationResponse] = (
-                    await self.service.select(input=input)
+                    await self.service.select(name=name)
                 )
                 if not response:
                     return HTTPException(

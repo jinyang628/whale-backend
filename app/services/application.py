@@ -11,7 +11,6 @@ from app.models.application import (
     ApplicationContent,
     PostApplicationRequest,
     PostApplicationResponse,
-    SelectApplicationRequest,
     SelectApplicationResponse,
     Table,
 )
@@ -73,12 +72,12 @@ class ApplicationService:
             )
 
     async def select(
-        self, input: SelectApplicationRequest
+        self, name: str
     ) -> Optional[SelectApplicationResponse]:
         """Selects the entry from the application table."""
         orm = Orm(url=INTERNAL_DATABASE_URL)
         result: list[Application] = await orm.get_application(
-            orm_model=ApplicationORM, pydantic_model=Application, names=[input.name]
+            orm_model=ApplicationORM, pydantic_model=Application, names=[name]
         )
         if len(result) != 1:
             return None

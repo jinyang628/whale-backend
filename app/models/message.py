@@ -1,4 +1,5 @@
 from enum import StrEnum
+from typing import Any
 from pydantic import BaseModel
 
 from app.models.reverse import ReverseActionWrapper
@@ -17,7 +18,6 @@ class PostMessageRequest(BaseModel):
     chat_history: list[Message]
     reverse_stack: list[ReverseActionWrapper]
     application_names: list[str]
-
 
 class PostMessageResponse(BaseModel):
     message_lst: list[Message]

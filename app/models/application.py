@@ -144,14 +144,6 @@ class PostApplicationResponse(BaseModel):
     class Config:
         extra = "forbid"
 
-
-class SelectApplicationRequest(BaseModel):
-    name: str
-
-    class Config:
-        extra = "forbid"
-
-
 class SelectApplicationResponse(BaseModel):
     application: ApplicationContent
 

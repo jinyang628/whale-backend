@@ -13,7 +13,7 @@ def get_sql_type(data_type: DataType) -> str:
         DataType.FLOAT: "REAL",
         DataType.BOOLEAN: "BOOLEAN",
         DataType.DATE: "DATE",
-        DataType.DATETIME: "TIMESTAMP",
+        DataType.DATETIME: "TIMESTAMPTZ",
         DataType.UUID: "UUID",
     }
     return sql_type_map[data_type]

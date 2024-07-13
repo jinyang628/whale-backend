@@ -136,11 +136,11 @@ async def _reverse_with_put(
     reverse_filter_conditions: list[dict[str, Any]],
     reverse_updated_data: list[dict[str, Any]]
 ):
-    for filter_conditions, updated_data in zip(reverse_filter_conditions, reverse_updated_data):
+    for filters, updated_data in zip(reverse_filter_conditions, reverse_updated_data):
         await orm.update_inference_result(
             model=table_orm_model,
-            filter_conditions=[filter_conditions],
-            updated_data=[updated_data]
+            filters=filters,
+            updated_data=updated_data
         )
     
 ###

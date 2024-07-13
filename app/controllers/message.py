@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from app.api.inference import infer
 from app.models.inference import ApplicationContent, InferenceRequest, InferenceResponse
 from app.models.message import Message, PostMessageRequest, PostMessageResponse, Role
-from app.models.reverse import ReverseActionDelete, ReverseActionWrapper
+from app.models.reverse import ReverseActionWrapper
 from app.services.message import MessageService
 
 log = logging.getLogger(__name__)

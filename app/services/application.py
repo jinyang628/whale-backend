@@ -43,6 +43,7 @@ class ApplicationService:
         for table in input.tables:
             # Prefix application name so that the table name remains unique amidst other client applications. Client application name is enforced to be unique
             table_name = f"{input.name}_{table.name}"
+            
             # For input of inference, we will GET table description from the internal database, and the table name and columns from the client database
             # For output of inference, we will simply modify the entries in the client database associated with the user's API key
             table_script: str = generate_table_creation_script(

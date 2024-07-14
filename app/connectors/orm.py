@@ -3,6 +3,8 @@ from sqlalchemy import or_, and_, select, delete, update
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from dotenv import find_dotenv, load_dotenv
+import os
 
 import logging
 from typing import Any, Type
@@ -12,13 +14,17 @@ from app.models.stores.base import BaseObject
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
+load_dotenv(find_dotenv(filename=".env"))
+INTERNAL_DATABASE_URL = os.environ.get("INTERNAL_DATABASE_URL")
+EXTERNAL_DATABASE_URL = os.environ.get("EXTERNAL_DATABASE_URL")
+
 class Orm:
     def __init__(
         self, 
-        url: str,
+        is_user_facing: bool = True
     ):
         self.engine = create_async_engine(
-            url,
+            url=EXTERNAL_DATABASE_URL if is_user_facing else INTERNAL_DATABASE_URL,
             echo=False,
         )
         self.sessionmaker = sessionmaker(

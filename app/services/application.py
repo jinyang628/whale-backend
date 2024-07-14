@@ -1,9 +1,6 @@
 import json
 import logging
-import os
 from typing import Optional
-
-from dotenv import find_dotenv, load_dotenv
 
 from app.connectors.orm import Orm
 from app.models.stores.application import Application, ApplicationORM
@@ -19,10 +16,6 @@ from app.stores.sqls.template import generate_foreign_key_script, generate_table
 
 log = logging.getLogger(__name__)
 
-load_dotenv(find_dotenv(filename=".env"))
-INTERNAL_DATABASE_URL = os.environ.get("INTERNAL_DATABASE_URL")
-EXTERNAL_DATABASE_URL = os.environ.get("EXTERNAL_DATABASE_URL")
-
 
 class ApplicationService:
 
@@ -30,7 +23,7 @@ class ApplicationService:
         """Inserts the entry into the application table."""
         tables_dump: list[dict] = [table.model_dump() for table in input.tables]
         application = Application.local(name=input.name, tables=tables_dump)
-        orm = Orm(url=INTERNAL_DATABASE_URL)
+        orm = Orm(is_user_facing=False)
         await orm.post(model=ApplicationORM, data=[application.model_dump()])
         return PostApplicationResponse(name=application.name)
 
@@ -51,7 +44,6 @@ class ApplicationService:
             )
             await execute_client_script(
                 table_name=table_name,
-                db_url=EXTERNAL_DATABASE_URL,
                 sql_script=table_script,
             )
 
@@ -67,7 +59,6 @@ class ApplicationService:
                 continue
             await execute_client_script(
                 table_name=table_name,
-                db_url=EXTERNAL_DATABASE_URL,
                 sql_script=foreign_key_script,
             )
 
@@ -75,7 +66,7 @@ class ApplicationService:
         self, name: str
     ) -> Optional[SelectApplicationResponse]:
         """Selects the entry from the application table."""
-        orm = Orm(url=INTERNAL_DATABASE_URL)
+        orm = Orm(is_user_facing=False)
         result: list[Application] = await orm.get_application(
             orm_model=ApplicationORM, pydantic_model=Application, names=[name]
         )

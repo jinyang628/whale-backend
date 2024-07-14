@@ -28,7 +28,7 @@ class MessageService:
     async def get_application_content_lst(
         self, application_names: list[str]
     ) -> list[ApplicationContent]:
-        orm = Orm(url=INTERNAL_DATABASE_URL)
+        orm = Orm(is_user_facing=False)
         applications: list[Application] = await orm.get_application(
             orm_model=ApplicationORM, 
             pydantic_model=Application,
@@ -79,7 +79,7 @@ class MessageService:
         if input.action.action_type == "get":
             return
         
-        orm = Orm(url=EXTERNAL_DATABASE_URL)
+        orm = Orm(is_user_facing=True)
         table_orm_model: Type[DeclarativeMeta] = create_dynamic_orm(
             table=input.action.target_table,
             application_name=input.action.application_name
@@ -150,7 +150,7 @@ async def _reverse_with_put(
 async def _execute(
     inference_response: InferenceResponse
 ) -> tuple[list[tuple[str, list[dict[str, Any]]]], list[ReverseActionWrapper]]:
-    orm = Orm(url=EXTERNAL_DATABASE_URL)
+    orm = Orm(is_user_facing=True)
     response_message_content_lst: list[str] = []
     response_reverse_action_lst: list[ReverseActionWrapper] = []
     for http_method_response in inference_response.response:

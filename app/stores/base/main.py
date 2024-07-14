@@ -1,18 +1,20 @@
 import logging
 import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine
-
+from dotenv import find_dotenv, load_dotenv
+import os
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+EXTERNAL_DATABASE_URL = os.environ.get("EXTERNAL_DATABASE_URL")
 
 async def execute_client_script(
-    table_name: str, db_url: str, sql_script: str
+    table_name: str, sql_script: str
 ):
     sql_statements = sql_script.split("##")
 
-    engine = create_async_engine(db_url)
+    engine = create_async_engine(EXTERNAL_DATABASE_URL)
     async with engine.begin() as connection:
         for statement in sql_statements:
             statement = statement.strip()

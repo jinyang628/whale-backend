@@ -40,6 +40,7 @@ class MessageController:
                         chat_history=input.chat_history
                     )
                 )
+                log.info(f"Inference response: {inference_response}")
                 result: PostMessageResponse = await self.service.execute_inference_response(
                     user_message=Message(
                         role=Role.USER,
@@ -49,6 +50,7 @@ class MessageController:
                     reverse_stack=input.reverse_stack,
                     inference_response=inference_response
                 )
+                log.info(f"Returning result to frontend: {result.model_dump()}")
                 return JSONResponse(
                     status_code=200, content=result.model_dump()
                 )

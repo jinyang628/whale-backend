@@ -58,8 +58,9 @@ class MessageService:
         
         response_message_lst = [Message(
             role=Role.ASSISTANT,
-            content=content
-        ) for content in response_message_content_lst]
+            content=content,
+            rows=rows
+        ) for content, rows in response_message_content_lst]
         
         reverse_stack.extend(response_reverse_action_lst)
         chat_history.append(user_message)
@@ -148,7 +149,7 @@ async def _reverse_with_put(
 ###
 async def _execute(
     inference_response: InferenceResponse
-) -> tuple[list[str], list[ReverseActionWrapper]]:
+) -> tuple[list[tuple[str, list[dict[str, Any]]]], list[ReverseActionWrapper]]:
     orm = Orm(url=EXTERNAL_DATABASE_URL)
     response_message_content_lst: list[str] = []
     response_reverse_action_lst: list[ReverseActionWrapper] = []
@@ -166,7 +167,8 @@ async def _execute(
             table=target_table,
             application_name=http_method_response.application.name
         )
-        filter_dict: Optional[dict] = None
+        filter_dict: dict[str, Any] = {}
+        update_dict: dict[str, Any] = {}
         if http_method_response.filter_conditions:
             filter_dict = {cond['column_name']: cond['column_value'] for cond in http_method_response.filter_conditions}
         if http_method_response.updated_data:
@@ -174,7 +176,8 @@ async def _execute(
             
         match http_method_response.http_method:
             case HttpMethod.POST:
-                message_content, reverse_action = await _execute_post_method(
+                log.info("Executing POST request")
+                message_content, rows, reverse_action = await _execute_post_method(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     http_method_response=http_method_response,
@@ -182,7 +185,8 @@ async def _execute(
                     application_name=http_method_response.application.name
                 )
             case HttpMethod.PUT:
-                message_content, reverse_action = await _execute_put_method(
+                log.info("Executing PUT request")
+                message_content, rows, reverse_action = await _execute_put_method(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     target_table=target_table,
@@ -191,7 +195,8 @@ async def _execute(
                     application_name=http_method_response.application.name
                 )
             case HttpMethod.DELETE:
-                message_content, reverse_action = await _execute_delete_method(
+                log.info("Executing DELETE request")
+                message_content, rows, reverse_action = await _execute_delete_method(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     http_method_response=http_method_response,
@@ -200,7 +205,8 @@ async def _execute(
                     application_name=http_method_response.application.name
                 )
             case HttpMethod.GET:
-                message_content, reverse_action = await _execute_get_method(
+                log.info("Executing GET request")
+                message_content, rows, reverse_action = await _execute_get_method(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     application_name=http_method_response.application.name,
@@ -212,7 +218,7 @@ async def _execute(
                     f"Unsupported HTTP method: {http_method_response.http_method}"
                 )
                 
-        response_message_content_lst.append(message_content)
+        response_message_content_lst.append((message_content, rows))
         response_reverse_action_lst.append(ReverseActionWrapper(action=reverse_action))
 
     log.info(response_message_content_lst)
@@ -225,23 +231,26 @@ async def _execute_post_method(
     http_method_response: HttpMethodResponse,
     target_table: Table,
     application_name: str
-) -> tuple[str, ReverseActionDelete]:
+) -> tuple[str, list[dict[str, Any]], ReverseActionDelete]:
     
     copied_rows: list[dict[str, Any]] = copy.deepcopy(http_method_response.inserted_rows)
     
-    # For now, the rows to insert need not be the same as the rows to return to frontend (typing issue -> we cant serialise datetime objects in API request)
+    log.info("Processing data for POST request")
     rows_to_insert: list[dict[str, Any]] = process_db_facing_rows(
         table=target_table,
         client_rows=copied_rows
     )
 
-    ids: list[Any] = await orm.post(
+    log.info("Initiating POST request")
+    ids, rows = await orm.post(
         model=table_orm_model, 
         data=rows_to_insert
     )
+    log.info(f"Rows from POST request: {rows}")
 
-    response_message_content: str = f"The following row(s) has been inserted into the {target_table.name} table of {http_method_response.application.name}:\n{json.dumps(http_method_response.inserted_rows, indent=4)}\n"
-    return response_message_content, ReverseActionDelete(ids=ids, target_table=target_table, application_name=application_name)
+    message_content: str = f"The following row(s) has been inserted into the {target_table.name} table of {http_method_response.application.name}:\n{json.dumps(http_method_response.inserted_rows, indent=4)}\n"
+    
+    return message_content, rows, ReverseActionDelete(ids=ids, target_table=target_table, application_name=application_name)
 
 async def _execute_put_method(
     orm: Orm, 
@@ -250,10 +259,11 @@ async def _execute_put_method(
     filter_dict: dict,
     update_dict: dict,
     application_name: str
-) -> tuple[str, ReverseActionUpdate]:
+) -> tuple[str, list[dict[str, Any]], ReverseActionUpdate]:
     copied_filter_dict: list[dict[str, Any]] = copy.deepcopy(filter_dict)
     copied_update_dict: list[dict[str, Any]] = copy.deepcopy(update_dict)
     
+    log.info("Processing data for PUT request")
     copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_dict(
         table=target_table,
         client_dict=copied_filter_dict
@@ -264,14 +274,16 @@ async def _execute_put_method(
         client_dict=copied_update_dict
     )
     
-    updated_results, reverse_filters, reverse_updated_data = await orm.update_inference_result(
+    log.info("Initiating PUT request")
+    rows, reverse_filters, reverse_updated_data = await orm.update_inference_result(
         model=table_orm_model, 
         filters=copied_filter_dict,
         updated_data=copied_update_dict
     )
-    
-    updated_results = process_client_facing_rows(
-        db_rows=updated_results,
+    log.info(f"Rows from PUT request: {rows}")
+
+    rows = process_client_facing_rows(
+        db_rows=rows,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process
     )
@@ -288,8 +300,9 @@ async def _execute_put_method(
         date_column_names_to_process=date_column_names_to_process
     )
     
-    response_message_content: str = f"The following {len(updated_results)} row(s) have been updated in the {target_table.name} table of {application_name} by filtering {json.dumps(filter_dict)}:\n{json.dumps(updated_results, indent=4)}\n"
-    return response_message_content, ReverseActionUpdate(
+    message_content: str = f"The following {len(rows)} row(s) have been updated in the {target_table.name} table of {application_name} by filtering {json.dumps(filter_dict)}:"
+    
+    return message_content, rows, ReverseActionUpdate(
         reverse_filter_conditions=reverse_filters, reverse_updated_data=reverse_updated_data, 
         target_table=target_table, application_name=application_name
         )
@@ -301,15 +314,18 @@ async def _execute_delete_method(
     target_table: Table,
     filter_dict: dict,
     application_name: str
-) -> tuple[str, ReverseActionPost]:
-    deleted_data: list[dict[str, Any]] = await orm.delete_inference_result(
+) -> tuple[str, list[dict[str, Any]], ReverseActionPost]:
+    
+    log.info("Initiating DELETE request")
+    rows: list[dict[str, Any]] = await orm.delete_inference_result(
         model=table_orm_model,
         filter_conditions=http_method_response.filter_conditions,
     )
-    response_message_content: str = f"The following {len(deleted_data)} row(s) have been deleted from the {target_table.name} table of {http_method_response.application.name} by filtering {json.dumps(filter_dict)}:\n{json.dumps(deleted_data, indent=4)}\n"
-    for row in deleted_data:
-        del row["id"]
-    return response_message_content, ReverseActionPost(deleted_data=deleted_data, target_table=target_table, application_name=application_name)
+    log.info(f"Rows from DELETE request: {rows}")
+    
+    message_content: str = f"The following {len(rows)} row(s) have been deleted from the {target_table.name} table of {http_method_response.application.name} by filtering {json.dumps(filter_dict)}:"
+
+    return message_content, rows, ReverseActionPost(deleted_data=rows, target_table=target_table, application_name=application_name)
 
 async def _execute_get_method(
     orm: Orm, 
@@ -317,26 +333,29 @@ async def _execute_get_method(
     application_name: str,
     target_table: Table,
     filter_dict: dict[str, Any]
-) -> tuple[str, ReverseActionGet]:
+) -> tuple[str, list[dict[str,Any]], ReverseActionGet]:
     
     copied_filter_dict: list[dict[str, Any]] = copy.deepcopy(filter_dict)
 
+    log.info("Processing data for GET request")
     copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_dict(
         table=target_table,
         client_dict=copied_filter_dict
     )
     
+    log.info("Initiating GET request")
     rows: list[dict[str, Any]] = await orm.get_inference_result(
         model=table_orm_model,
         filters=copied_filter_dict,
     )
-    
+    log.info(f"Rows from GET request: {rows}")
+
     rows = process_client_facing_rows(
         db_rows=rows,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process
     )
 
-    response_message_content: str = f"The following row(s) have been retrieved from the {target_table.name} table of {application_name} by filtering {json.dumps(filter_dict)}:\n{json.dumps(rows, indent=4)}\n"
+    message_content: str = f"The following row(s) have been retrieved from the {target_table.name} table of {application_name} by filtering {json.dumps(filter_dict)}:"
 
-    return response_message_content, ReverseActionGet()
+    return message_content, rows, ReverseActionGet()

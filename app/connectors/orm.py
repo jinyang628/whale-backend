@@ -28,7 +28,7 @@ class Orm:
         )
         
         
-    async def post(self, model: Type[DeclarativeMeta], data: list[dict[str, Any]]) -> list[Any]:
+    async def post(self, model: Type[DeclarativeMeta], data: list[dict[str, Any]]) -> tuple[list[Any], list[dict[str, Any]]]:
         """
         Inserts a list of model instances into the database.
 
@@ -37,13 +37,19 @@ class Orm:
         """
         orm_instances = [model(**item) for item in data]
         inserted_ids: list[Any] = []
+        inserted_rows: list[dict[str, Any]] = []
+
         async with self.sessionmaker() as session:
             session.add_all(orm_instances)
-            await session.flush()
-            inserted_ids = [instance.id for instance in orm_instances]
+            await session.flush()            
+            for instance in orm_instances:
+                row_dict = {column.name: getattr(instance, column.name) 
+                            for column in instance.__table__.columns}
+                inserted_rows.append(row_dict)
+                inserted_ids.append(instance.id)
             await session.commit()
             log.info(f"Inserted {len(data)} rows into {model.__tablename__}")
-        return inserted_ids
+        return inserted_ids, inserted_rows
         
     async def get_application(
         self, 

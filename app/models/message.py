@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Any
+from typing import Any, Optional
 from pydantic import BaseModel
 
 from app.models.reverse import ReverseActionWrapper
@@ -12,6 +12,7 @@ class Role(StrEnum):
 class Message(BaseModel):
     role: Role
     content: str
+    rows: Optional[list[dict[str, Any]]] = None
     
 class PostMessageRequest(BaseModel):
     message: str

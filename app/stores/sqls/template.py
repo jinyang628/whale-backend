@@ -22,7 +22,12 @@ def get_sql_type(data_type: DataType) -> str:
 # TODO: Implement some sort of versioning system so clients can update their tables without breaking the application/dropping the entire table
 # TODO: Implement unique constraints that can be controlled by clients when creating applications
 
-def generate_table_creation_script(table_name: str, columns: list[Column]):
+def generate_table_creation_script(
+    table_name: str, 
+    columns: list[Column],
+    enable_created_at_timestamp: bool,
+    enable_updated_at_timestamp: bool,
+):
     """Generates SQL script for creating a table."""
     column_defs = []
     for col in columns:
@@ -52,15 +57,47 @@ def generate_table_creation_script(table_name: str, columns: list[Column]):
 
         column_defs.append(f"    {col.name} {sql_type}{nullable}{default}{unique}")
 
+    if enable_created_at_timestamp:
+        column_defs.append("    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP")
+
+    if enable_updated_at_timestamp:
+        column_defs.append("    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP")
+
     column_defs_str = ",\n".join(column_defs)
 
     script = f"""
 DROP TABLE IF EXISTS {table_name} CASCADE;
 ##
+"""
+
+    if enable_updated_at_timestamp:
+        script += """
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+##
+"""
+
+    script += f"""
 CREATE TABLE {table_name} (
 {column_defs_str}
 );
+##
 """
+
+    if enable_updated_at_timestamp:
+        script += f"""
+CREATE TRIGGER update_{table_name}_updated_at
+BEFORE UPDATE ON {table_name}
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+##
+"""
+
     return script
 
 

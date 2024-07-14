@@ -15,6 +15,7 @@ def get_sql_type(data_type: DataType) -> str:
         DataType.DATE: "DATE",
         DataType.DATETIME: "TIMESTAMPTZ",
         DataType.UUID: "UUID",
+        DataType.ENUM: "ENUM",
     }
     return sql_type_map[data_type]
 
@@ -25,35 +26,35 @@ def get_sql_type(data_type: DataType) -> str:
 def generate_table_creation_script(
     table_name: str, 
     columns: list[Column],
+    primary_key: PrimaryKey,
     enable_created_at_timestamp: bool,
     enable_updated_at_timestamp: bool,
 ):
     """Generates SQL script for creating a table."""
     column_defs = []
+    
+    match primary_key:
+        case PrimaryKey.AUTO_INCREMENT:
+            column_defs.append("    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY")
+        case PrimaryKey.UUID:
+            column_defs.append("    id UUID PRIMARY KEY DEFAULT gen_random_uuid()")
+        case _:
+            raise ValueError(f"Unsupported primary key type: {primary_key}")
+
     for col in columns:
         sql_type = get_sql_type(col.data_type)
         nullable = "" if col.nullable else " NOT NULL"
         unique = " UNIQUE" if col.unique else ""
 
-        if col.primary_key != PrimaryKey.NONE:
-            match col.primary_key:
-                case PrimaryKey.AUTO_INCREMENT:
-                    sql_type = "INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY"
-                case PrimaryKey.UUID:
-                    sql_type = "UUID PRIMARY KEY DEFAULT gen_random_uuid()"
-                case _:
-                    raise ValueError(f"Unsupported primary key type: {col.primary_key}")
-            default = ""  # Do not set default for primary key
-        else:
-            if col.default_value is not None:
-                if isinstance(col.default_value, str):
-                    default = f" DEFAULT '{col.default_value}'"
-                elif isinstance(col.default_value, bool):
-                    default = f" DEFAULT {'TRUE' if col.default_value else 'FALSE'}"
-                else:
-                    default = f" DEFAULT {col.default_value}"
+        if col.default_value is not None:
+            if isinstance(col.default_value, str):
+                default = f" DEFAULT '{col.default_value}'"
+            elif isinstance(col.default_value, bool):
+                default = f" DEFAULT {'TRUE' if col.default_value else 'FALSE'}"
             else:
-                default = ""
+                default = f" DEFAULT {col.default_value}"
+        else:
+            default = ""
 
         column_defs.append(f"    {col.name} {sql_type}{nullable}{default}{unique}")
 

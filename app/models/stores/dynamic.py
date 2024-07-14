@@ -1,6 +1,6 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import registry
-from sqlalchemy import UUID, Boolean, Date, TIMESTAMP, Float, Integer, String, Table as SQLAlchemyTable, Column as SQLAlchemyColumn
+from sqlalchemy import UUID, Boolean, Date, TIMESTAMP, Enum, Float, Integer, String, Table as SQLAlchemyTable, Column as SQLAlchemyColumn
 from app.models.application import DataType, PrimaryKey, Table
 
 # Create a registry
@@ -19,16 +19,36 @@ def create_dynamic_orm(table: Table, application_name: str):
         return orm_class_cache[class_name]
     
     # Create the SQLAlchemy Table object
+    columns: SQLAlchemyColumn = []
+    match table.primary_key:
+        case PrimaryKey.AUTO_INCREMENT:
+            columns.append(SQLAlchemyColumn(
+                "id",
+                Integer,
+                primary_key=True,
+                autoincrement=True,
+            ))
+        case PrimaryKey.UUID:
+            columns.append(SQLAlchemyColumn(
+                "id",
+                UUID,
+                primary_key=True,
+                server_default="gen_random_uuid()",
+            ))
+        case _:
+            raise ValueError(f"Unsupported primary key type: {table.primary_key}")
+        
+    for col in table.columns:
+        columns.append(SQLAlchemyColumn(
+            col.name,
+            _get_sqlalchemy_type(col.data_type),
+            # nullable=col.nullable,
+        ))
+
     sqlalchemy_table = SQLAlchemyTable(
         table_name, 
         mapper_registry.metadata,
-        *[SQLAlchemyColumn(
-            col.name,
-            _get_sqlalchemy_type(col.data_type),
-            primary_key=(col.primary_key != PrimaryKey.NONE),
-            autoincrement=(col.primary_key == PrimaryKey.AUTO_INCREMENT),
-            nullable=col.nullable
-        ) for col in table.columns],
+        *columns,
         extend_existing=True  # This allows redefining tables if they already exist in the metadata
     )
 
@@ -56,4 +76,5 @@ def _get_sqlalchemy_type(data_type: DataType):
         DataType.DATE: Date,
         DataType.DATETIME: TIMESTAMP(timezone=True),
         DataType.UUID: UUID,
+        DataType.ENUM: Enum,
     }.get(data_type, String)

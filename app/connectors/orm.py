@@ -1,7 +1,9 @@
+from datetime import datetime
 from pydantic import BaseModel
 from sqlalchemy import or_, and_, select, delete, update
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.decl_api import DeclarativeMeta
+from sqlalchemy.sql import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from dotenv import find_dotenv, load_dotenv
 import os
@@ -48,11 +50,28 @@ class Orm:
         async with self.sessionmaker() as session:
             session.add_all(orm_instances)
             await session.flush()            
-            for instance in orm_instances:
-                row_dict = {column.name: getattr(instance, column.name) 
-                            for column in instance.__table__.columns}
+            inserted_ids = [instance.id for instance in orm_instances]
+
+            # Fetch column names directly from the database
+            table_name = model.__tablename__
+            columns_query = text(f"SELECT column_name FROM information_schema.columns WHERE table_name = :table_name")
+            result = await session.execute(columns_query, {'table_name': table_name})
+            columns = [row[0] for row in result]
+            
+            # Construct a query to select all columns for the inserted rows
+            columns_str = ', '.join(columns)
+            select_query = text(f"SELECT {columns_str} FROM {table_name} WHERE id = ANY(:ids)")
+            result = await session.execute(select_query, {'ids': inserted_ids})
+            
+            for row in result:
+                row_dict = {}
+                for column, value in zip(columns, row):
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
+                    row_dict[column] = value
                 inserted_rows.append(row_dict)
-                inserted_ids.append(instance.id)
+                logging.info(f"Inserted row: {row_dict}")
+                
             await session.commit()
             log.info(f"Inserted {len(data)} rows into {model.__tablename__}")
         return inserted_ids, inserted_rows

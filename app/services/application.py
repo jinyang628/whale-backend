@@ -41,6 +41,7 @@ class ApplicationService:
             table_script: str = generate_table_creation_script(
                 table_name=table_name, 
                 columns=table.columns,
+                primary_key=table.primary_key,
                 enable_created_at_timestamp=table.enable_created_at_timestamp,
                 enable_updated_at_timestamp=table.enable_updated_at_timestamp
             )

@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel
 from sqlalchemy import or_, and_, select, delete, update
+from asyncpg.pgproto.pgproto import UUID as AsyncpgUUID
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql import text
@@ -50,9 +51,14 @@ class Orm:
 
         async with self.sessionmaker() as session:
             session.add_all(orm_instances)
-            await session.flush()            
-            inserted_ids = [instance.id for instance in orm_instances]
-
+            await session.flush()
+            
+            for instance in orm_instances:
+                if isinstance(instance.id, AsyncpgUUID):
+                    inserted_ids.append(str(instance.id))
+                else:
+                    inserted_ids.append(instance.id)          
+            
             # Fetch column names directly from the database
             table_name = model.__tablename__
             columns_query = text(f"SELECT column_name FROM information_schema.columns WHERE table_name = :table_name")
@@ -69,11 +75,14 @@ class Orm:
                 for column, value in zip(columns, row):
                     if isinstance(value, datetime):
                         value = value.isoformat()
+                    if isinstance(value, AsyncpgUUID):
+                        value = str(value)
                     row_dict[column] = value
                 inserted_rows.append(row_dict)
                 
             await session.commit()
             log.info(f"Inserted {len(data)} rows into {model.__tablename__}")
+            
         return inserted_ids, inserted_rows
         
     async def get_application(
@@ -198,6 +207,8 @@ class Orm:
                 for column, value in zip(columns, row):
                     if isinstance(value, datetime):
                         value = value.isoformat()
+                    if isinstance(value, AsyncpgUUID):
+                        value = str(value)
                     row_dict[column] = value
                 deleted_rows.append(row_dict)
             

@@ -1,12 +1,10 @@
 import copy
 import json
 import logging
-import os
 from typing import Any, Optional, Type
 from sqlalchemy.orm.decl_api import DeclarativeMeta
-
-from dotenv import find_dotenv, load_dotenv
-
+from asyncpg.pgproto.pgproto import UUID as AsyncpgUUID
+import uuid
 from app.connectors.orm import Orm
 from app.models.application import Table
 from app.models.inference import ApplicationContent, HttpMethod, HttpMethodResponse, InferenceResponse
@@ -18,13 +16,10 @@ from app.stores.utils.process import process_client_facing_dict, process_db_faci
 
 log = logging.getLogger(__name__)
 
-load_dotenv(find_dotenv(filename=".env"))
-INTERNAL_DATABASE_URL = os.environ.get("INTERNAL_DATABASE_URL")
-EXTERNAL_DATABASE_URL = os.environ.get("EXTERNAL_DATABASE_URL")
-
 
 # TODO: Abstract the client ORM and internal ORM into the connectors folder (services shouldnt need to load from env in their own files)
 class MessageService:
+    
     async def get_application_content_lst(
         self, application_names: list[str]
     ) -> list[ApplicationContent]:
@@ -52,15 +47,9 @@ class MessageService:
         reverse_stack: list[ReverseActionWrapper],
         inference_response: InferenceResponse
     ) -> PostMessageResponse:        
-        response_message_content_lst, response_reverse_action_lst = await _execute(
+        response_message_lst, response_reverse_action_lst = await _execute(
             inference_response=inference_response
         )
-        
-        response_message_lst = [Message(
-            role=Role.ASSISTANT,
-            content=content,
-            rows=rows
-        ) for content, rows in response_message_content_lst]
         
         reverse_stack.extend(response_reverse_action_lst)
         chat_history.append(user_message)
@@ -115,9 +104,14 @@ async def _reverse_with_delete(
     table_orm_model: Type[DeclarativeMeta],
     ids: list[Any],
 ):
+    ids_lst: list[Any] = []
+    for id in ids:
+        if isinstance(id, str): # Convert the string uuid back to UUID object (It had to be a string because UUID is not JSON serialisable as an API request object)
+            ids_lst.append(uuid.UUID(id))
+
     await orm.delete_inference_result(
         model=table_orm_model, 
-        filters=[{"column_name": "id", "column_value": id} for id in ids],
+        filters={"id": ids_lst[0]}, ## TODO: Fix this problematic temp fix to allow reverse of multiple entries
         is_and=False
     )
     
@@ -130,6 +124,7 @@ async def _reverse_with_post(
         del[row["id"]]
         del[row["created_at"]]
         del[row["updated_at"]]
+        
     await orm.post(
         model=table_orm_model, 
         data=deleted_data
@@ -153,9 +148,9 @@ async def _reverse_with_put(
 ###
 async def _execute(
     inference_response: InferenceResponse
-) -> tuple[list[tuple[str, list[dict[str, Any]]]], list[ReverseActionWrapper]]:
+) -> tuple[list[Message], list[ReverseActionWrapper]]:
     orm = Orm(is_user_facing=True)
-    response_message_content_lst: list[str] = []
+    response_message_content_lst: list[Message] = []
     response_reverse_action_lst: list[ReverseActionWrapper] = []
     for http_method_response in inference_response.response:
         target_table: Optional[Table] = None
@@ -181,7 +176,7 @@ async def _execute(
         match http_method_response.http_method:
             case HttpMethod.POST:
                 log.info("Executing POST request")
-                message_content, rows, reverse_action = await _execute_post_method(
+                content, rows, reverse_action = await _execute_post_method(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     http_method_response=http_method_response,
@@ -190,7 +185,7 @@ async def _execute(
                 )
             case HttpMethod.PUT:
                 log.info("Executing PUT request")
-                message_content, rows, reverse_action = await _execute_put_method(
+                content, rows, reverse_action = await _execute_put_method(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     target_table=target_table,
@@ -200,7 +195,7 @@ async def _execute(
                 )
             case HttpMethod.DELETE:
                 log.info("Executing DELETE request")
-                message_content, rows, reverse_action = await _execute_delete_method(
+                content, rows, reverse_action = await _execute_delete_method(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     http_method_response=http_method_response,
@@ -210,7 +205,7 @@ async def _execute(
                 )
             case HttpMethod.GET:
                 log.info("Executing GET request")
-                message_content, rows, reverse_action = await _execute_get_method(
+                content, rows, reverse_action = await _execute_get_method(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     application_name=http_method_response.application.name,
@@ -222,7 +217,13 @@ async def _execute(
                     f"Unsupported HTTP method: {http_method_response.http_method}"
                 )
                 
-        response_message_content_lst.append((message_content, rows))
+        message = Message(
+            role=Role.ASSISTANT,
+            content=content,
+            rows=rows
+        )
+                
+        response_message_content_lst.append(message)
         response_reverse_action_lst.append(ReverseActionWrapper(action=reverse_action))
 
     log.info(response_message_content_lst)

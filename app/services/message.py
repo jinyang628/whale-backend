@@ -117,7 +117,7 @@ async def _reverse_with_delete(
 ):
     await orm.delete_inference_result(
         model=table_orm_model, 
-        filter_conditions=[{"column_name": "id", "column_value": id} for id in ids],
+        filters=[{"column_name": "id", "column_value": id} for id in ids],
         is_and=False
     )
     
@@ -319,7 +319,7 @@ async def _execute_delete_method(
     log.info("Initiating DELETE request")
     rows: list[dict[str, Any]] = await orm.delete_inference_result(
         model=table_orm_model,
-        filter_conditions=http_method_response.filter_conditions,
+        filters=filter_dict,
     )
     log.info(f"Rows from DELETE request: {rows}")
     

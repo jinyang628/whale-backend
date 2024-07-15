@@ -71,7 +71,6 @@ class Orm:
                         value = value.isoformat()
                     row_dict[column] = value
                 inserted_rows.append(row_dict)
-                logging.info(f"Inserted row: {row_dict}")
                 
             await session.commit()
             log.info(f"Inserted {len(data)} rows into {model.__tablename__}")
@@ -163,7 +162,7 @@ class Orm:
     async def delete_inference_result(
         self, 
         model: Type[DeclarativeMeta], 
-        filter_conditions: list[dict[str, str]], 
+        filters: dict[str, Any], 
         is_and: bool = True,
     ) -> list[dict[Any, dict]]:
         """Deletes entries from the specified table based on the filters provided.
@@ -176,34 +175,38 @@ class Orm:
         Returns:
             list[dict[Any, dict]]: The data necessary to reverse the deletion.
         """
-        results: list[dict[str, Any]] = []
+        deleted_rows: list[dict[str, Any]] = []
     
         async with self.sessionmaker() as session:
             condition = and_ if is_and else or_
-            query_filter = condition(*[
-                getattr(model, filter_dict['column_name']) == 
-                _convert_value_to_column_type(model, filter_dict['column_name'], filter_dict['column_value'])
-                for filter_dict in filter_conditions
-            ])
+            query_filter = condition(*[getattr(model, column_name) == column_value for column_name, column_value in filters.items()])
+                        
+            # Fetch column names directly from the database
+            table_name = model.__tablename__
+            columns_query = text(f"SELECT column_name FROM information_schema.columns WHERE table_name = :table_name")
+            result = await session.execute(columns_query, {'table_name': table_name})
+            columns = [row[0] for row in result]
             
-            # Fetch the rows to be deleted
-            select_stmt = select(model).where(query_filter)
-            result = await session.execute(select_stmt)
-            to_delete_rows = result.scalars().all()
+            # Construct a query to select all columns for the rows to be deleted
+            columns_str = ', '.join(columns)
+            where_clause = ' AND '.join([f"{key} = :{key}" for key in filters.keys()])
+            select_query = text(f"SELECT {columns_str} FROM {table_name} WHERE {where_clause}")
+            result = await session.execute(select_query, filters)
             
-            # Convert the to-be-deleted rows to dictionaries
-            for row in to_delete_rows:
-                row_dict = {column.name: getattr(row, column.name) for column in model.__table__.columns}
-                results.append(row_dict)
+            for row in result:
+                row_dict = {}
+                for column, value in zip(columns, row):
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
+                    row_dict[column] = value
+                deleted_rows.append(row_dict)
             
-            # Perform the delete operation
+            # Perform the deletion
             delete_stmt = delete(model).where(query_filter)
             await session.execute(delete_stmt)
             await session.commit()
-            
-            log.info(f"Deleted {len(results)} rows from database")
         
-        return results
+        return deleted_rows
     
     async def update_inference_result(
         self, 

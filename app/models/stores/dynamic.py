@@ -41,8 +41,7 @@ def create_dynamic_orm(table: Table, application_name: str):
     for col in table.columns:
         columns.append(SQLAlchemyColumn(
             col.name,
-            _get_sqlalchemy_type(col.data_type),
-            # nullable=col.nullable,
+            _get_sqlalchemy_type(data_type=col.data_type),
         ))
 
     sqlalchemy_table = SQLAlchemyTable(

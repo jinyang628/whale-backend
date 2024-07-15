@@ -1,3 +1,5 @@
+from datetime import date
+import datetime
 from app.models.application import Column, DataType, PrimaryKey
 import logging
 
@@ -32,7 +34,8 @@ def generate_table_creation_script(
 ):
     """Generates SQL script for creating a table."""
     column_defs = []
-    
+    enum_types = []
+
     match primary_key:
         case PrimaryKey.AUTO_INCREMENT:
             column_defs.append("    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY")
@@ -56,6 +59,12 @@ def generate_table_creation_script(
         else:
             default = ""
 
+        if sql_type.upper() == 'ENUM':
+            enum_name = f"{col.name}_enum"
+            enum_values = ", ".join(f"'{v}'" for v in col.enum_values)
+            enum_types.append(f"CREATE TYPE {enum_name} AS ENUM ({enum_values});")
+            sql_type = enum_name
+
         column_defs.append(f"    {col.name} {sql_type}{nullable}{default}{unique}")
 
     if enable_created_at_timestamp:
@@ -66,10 +75,10 @@ def generate_table_creation_script(
 
     column_defs_str = ",\n".join(column_defs)
 
-    script = f"""
-DROP TABLE IF EXISTS {table_name} CASCADE;
-##
-"""
+    script = f"DROP TABLE IF EXISTS {table_name} CASCADE; ##\n"
+
+    for enum_type in enum_types:
+        script += f"{enum_type}\n##"
 
     if enable_updated_at_timestamp:
         script += """
@@ -79,15 +88,13 @@ BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
-##
+$$ LANGUAGE plpgsql; ##
 """
 
     script += f"""
 CREATE TABLE {table_name} (
 {column_defs_str}
-);
-##
+); ##
 """
 
     if enable_updated_at_timestamp:

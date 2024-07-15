@@ -126,6 +126,10 @@ async def _reverse_with_post(
     table_orm_model: Type[DeclarativeMeta],
     deleted_data: list[dict[str, Any]]
 ):
+    for row in deleted_data:
+        del[row["id"]]
+        del[row["created_at"]]
+        del[row["updated_at"]]
     await orm.post(
         model=table_orm_model, 
         data=deleted_data

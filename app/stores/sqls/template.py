@@ -26,6 +26,7 @@ def get_sql_type(data_type: DataType) -> str:
 # TODO: Implement unique constraints that can be controlled by clients when creating applications
 
 def generate_table_creation_script(
+    application_name: str,
     table_name: str, 
     columns: list[Column],
     primary_key: PrimaryKey,
@@ -60,8 +61,9 @@ def generate_table_creation_script(
             default = ""
 
         if sql_type.upper() == 'ENUM':
-            enum_name = f"{col.name}_enum"
+            enum_name = f"{table_name}_{col.name}_enum"
             enum_values = ", ".join(f"'{v}'" for v in col.enum_values)
+            enum_types.append(f"DROP TYPE IF EXISTS {enum_name};") ## TODO: This will be problematic as different applications might drop each other's enum. We need to associate the application id to this
             enum_types.append(f"CREATE TYPE {enum_name} AS ENUM ({enum_values});")
             sql_type = enum_name
 

@@ -1,6 +1,7 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import registry
 from sqlalchemy import UUID, Boolean, Date, TIMESTAMP, Enum, Float, Integer, String, Table as SQLAlchemyTable, Column as SQLAlchemyColumn
+from sqlalchemy.dialects.postgresql import ENUM as PostgreSQLEnum
 from app.models.application import DataType, PrimaryKey, Table
 
 # Create a registry
@@ -39,9 +40,14 @@ def create_dynamic_orm(table: Table, application_name: str):
             raise ValueError(f"Unsupported primary key type: {table.primary_key}")
         
     for col in table.columns:
+        sql_alchemy_type = _get_sqlalchemy_type(data_type=col.data_type)
+        if sql_alchemy_type == Enum:
+            enum_name = f"{table_name}_{col.name}_enum"
+            enum_values = tuple(col.enum_values)
+            sql_alchemy_type = PostgreSQLEnum(*enum_values, name=enum_name, create_type=False)
         columns.append(SQLAlchemyColumn(
             col.name,
-            _get_sqlalchemy_type(data_type=col.data_type),
+            sql_alchemy_type,
         ))
 
     sqlalchemy_table = SQLAlchemyTable(

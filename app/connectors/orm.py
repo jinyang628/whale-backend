@@ -7,6 +7,7 @@ from sqlalchemy.sql import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from dotenv import find_dotenv, load_dotenv
 import os
+from sqlalchemy.dialects.postgresql import ENUM as PostgreSQLEnum
 
 import logging
 from typing import Any, Type
@@ -179,7 +180,11 @@ class Orm:
     
         async with self.sessionmaker() as session:
             condition = and_ if is_and else or_
-            query_filter = condition(*[getattr(model, filter_dict['column_name']) == filter_dict['column_value'] for filter_dict in filter_conditions])
+            query_filter = condition(*[
+                getattr(model, filter_dict['column_name']) == 
+                _convert_value_to_column_type(model, filter_dict['column_name'], filter_dict['column_value'])
+                for filter_dict in filter_conditions
+            ])
             
             # Fetch the rows to be deleted
             select_stmt = select(model).where(query_filter)
@@ -305,6 +310,12 @@ class Orm:
                 results.extend(batch_results)
                 offset += batch_size
         return results 
+
+def _convert_value_to_column_type(model, column_name, value):
+    column = getattr(model, column_name)
+    if isinstance(column.type, PostgreSQLEnum):
+        return column.type.enum_class(value)
+    return value
 
 # TODO: Integrate this? But probably better to have a pydantic model to handle this. Boolean clause class?
 def _build_filter_condition(self, model: Type[DeclarativeMeta], filters: dict[str, Any]):

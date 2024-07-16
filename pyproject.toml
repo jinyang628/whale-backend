@@ -6,7 +6,7 @@ authors = ["jinyang628 <chenjinyang4192@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.12.1"
+python = "^3.12.1"
 black = "^24.4.2"
 fastapi = "^0.111.0"
 sqlalchemy = "^2.0.31"

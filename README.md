@@ -38,10 +38,16 @@ Copy an existing environment template file and fill in all the necessary values:
 cp .env.example .env
 ```
 
-### Start the server
+### Start the server (locally)
 
 ```
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
+```
+
+### Start the server (on ec2)
+
+```
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8080 --ssl-keyfile ~/backend/privkey.pem --ssl-certfile ~/backend/fullchain.pem
 ```
 
 ### Check style

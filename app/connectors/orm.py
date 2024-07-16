@@ -84,37 +84,6 @@ class Orm:
             log.info(f"Inserted {len(data)} rows into {model.__tablename__}")
             
         return inserted_ids, inserted_rows
-        
-    async def get_application(
-        self, 
-        orm_model: Type[DeclarativeMeta], 
-        pydantic_model: Type[BaseModel],
-        names: list[str], 
-    ) -> list[BaseObject]:
-        """Fetches entries from the specified table based on the filters provided.
-
-        Args:
-            orm_model (Type[DeclarativeMeta]): The SQLAlchemy ORM model to fetch data of.
-            pydantic_model (Type[BaseModel]): The pydantic model to validate the ORM model to.
-            filters (list[dict): The filters to apply to the query.
-
-        Returns:
-            list[FishBaseObject]: A list of FishBaseObject that match the filters.
-        """
-        results = []
-        async with self.sessionmaker() as session:
-            query = select(orm_model)
-            if names:
-                query_filter = or_(*[orm_model.name == name for name in names])
-                query = query.filter(query_filter)                
-
-            results = await session.execute(query)
-            results = results.scalars().all()
-        
-        if not results:
-            return []
-        
-        return [pydantic_model.model_validate(result) for result in results]
     
     async def get_inference_result(
         self, 
@@ -147,7 +116,7 @@ class Orm:
                 
                 query = query.limit(batch_size).offset(offset)
                 batch_results = await session.execute(query)
-                batch_results = batch_results.scalars().all()  # Add this line
+                batch_results = batch_results.scalars().all() 
 
                 if not batch_results:
                     break
@@ -160,11 +129,28 @@ class Orm:
             return []
         
         inference_results: list[dict[str, Any]] = []
-        for result in results:
-            row_result = {}
-            for column in result.__table__.columns:
-                row_result[column.name] = getattr(result, column.name)
-            inference_results.append(row_result)
+        
+        # Fetch column names directly from the database
+        table_name = model.__tablename__
+        columns_query = text(f"SELECT column_name FROM information_schema.columns WHERE table_name = :table_name")
+        result = await session.execute(columns_query, {'table_name': table_name})
+        columns = [row[0] for row in result]
+        
+        # Construct a query to select all columns for the inserted rows
+        columns_str = ', '.join(columns)
+        select_query = text(f"SELECT {columns_str} FROM {table_name} WHERE id = ANY(:ids)")
+        result = await session.execute(select_query, {'ids': [result.id for result in results]})
+        
+        for row in result:
+            row_dict = {}
+            for column, value in zip(columns, row):
+                if isinstance(value, datetime):
+                    value = value.isoformat()
+                if isinstance(value, AsyncpgUUID):
+                    value = str(value)
+                row_dict[column] = value
+            inference_results.append(row_dict)
+            
         return inference_results
 
     
@@ -284,6 +270,37 @@ class Orm:
                 if original[key] != value:
                     reverse_updated_data.append({key: original[key]})
         return updated_results, reverse_filters, reverse_updated_data
+    
+    async def get_application(
+        self, 
+        orm_model: Type[DeclarativeMeta], 
+        pydantic_model: Type[BaseModel],
+        names: list[str], 
+    ) -> list[BaseObject]:
+        """Fetches entries from the specified table based on the filters provided.
+
+        Args:
+            orm_model (Type[DeclarativeMeta]): The SQLAlchemy ORM model to fetch data of.
+            pydantic_model (Type[BaseModel]): The pydantic model to validate the ORM model to.
+            filters (list[dict): The filters to apply to the query.
+
+        Returns:
+            list[FishBaseObject]: A list of FishBaseObject that match the filters.
+        """
+        results = []
+        async with self.sessionmaker() as session:
+            query = select(orm_model)
+            if names:
+                query_filter = or_(*[orm_model.name == name for name in names])
+                query = query.filter(query_filter)                
+
+            results = await session.execute(query)
+            results = results.scalars().all()
+        
+        if not results:
+            return []
+        
+        return [pydantic_model.model_validate(result) for result in results]
     
     ### Miscellaneous ###
     def get_column(self, model: Type[DeclarativeMeta], column: str, filters: dict, is_and: bool = True, batch_size: int = 6500) -> list[Any]:

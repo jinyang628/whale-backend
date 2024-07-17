@@ -104,10 +104,15 @@ async def _reverse_with_delete(
     table_orm_model: Type[DeclarativeMeta],
     ids: list[Any],
 ):
+    print(ids)
     ids_lst: list[Any] = []
     for id in ids:
         if isinstance(id, str): # Convert the string uuid back to UUID object (It had to be a string because UUID is not JSON serialisable as an API request object)
             ids_lst.append(uuid.UUID(id))
+        elif isinstance(id, int): # AUTO_INCREMENT primary key
+            ids_lst.append(id)
+        else:
+            raise TypeError("Invalid type for id in reverse action")
 
     await orm.delete_inference_result(
         model=table_orm_model, 

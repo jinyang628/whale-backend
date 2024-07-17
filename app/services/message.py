@@ -121,7 +121,6 @@ async def _reverse_with_post(
     deleted_data: list[dict[str, Any]]
 ):
     for row in deleted_data:
-        del[row["id"]]
         del[row["created_at"]]
         del[row["updated_at"]]
         
@@ -329,8 +328,12 @@ async def _execute_delete_method(
     log.info(f"Rows from DELETE request: {rows}")
     
     message_content: str = f"The following {len(rows)} row(s) have been deleted from the {target_table.name} table of {http_method_response.application.name} by filtering {json.dumps(filter_dict)}:"
-
-    return message_content, rows, ReverseActionPost(deleted_data=rows, target_table=target_table, application_name=application_name)
+    
+    return message_content, rows, ReverseActionPost(
+        deleted_data=rows, 
+        target_table=target_table, 
+        application_name=application_name
+    )
 
 async def _execute_get_method(
     orm: Orm, 

@@ -99,7 +99,7 @@ class Table(BaseModel):
     name: str
     description: Optional[str] = None
     columns: list[Column]
-    primary_key: PrimaryKey = PrimaryKey.AUTO_INCREMENT
+    primary_key: PrimaryKey
     enable_created_at_timestamp: Optional[bool] = False
     enable_updated_at_timestamp: Optional[bool] = False
 

@@ -40,7 +40,6 @@ class ApplicationService:
             # For input of inference, we will GET table description from the internal database, and the table name and columns from the client database
             # For output of inference, we will simply modify the entries in the client database associated with the user's API key
             table_script: str = generate_table_creation_script(
-                application_name=application_name,
                 table_name=table_name, 
                 columns=table.columns,
                 primary_key=table.primary_key,

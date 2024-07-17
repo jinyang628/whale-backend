@@ -33,6 +33,7 @@ class MessageController:
                 application_content_lst: list[ApplicationContent] = await self.service.get_application_content_lst(
                     application_names=input.application_names 
                 )
+                log.info(f"Application content list: {application_content_lst}")
                 inference_response: InferenceResponse = infer(
                     input=InferenceRequest(
                         applications=application_content_lst,

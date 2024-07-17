@@ -22,6 +22,7 @@ load_dotenv(find_dotenv(filename=".env"))
 INTERNAL_DATABASE_URL = os.environ.get("INTERNAL_DATABASE_URL")
 EXTERNAL_DATABASE_URL = os.environ.get("EXTERNAL_DATABASE_URL")
 
+# All these functions work but are an absolute mess implementation wise. Please refactor. But lets get to it after the structure of the filter conditions and everything is firmed.
 class Orm:
     def __init__(
         self, 
@@ -52,7 +53,6 @@ class Orm:
         async with self.sessionmaker() as session:
             session.add_all(orm_instances)
             await session.flush()
-            
             for instance in orm_instances:
                 if isinstance(instance.id, AsyncpgUUID):
                     inserted_ids.append(str(instance.id))

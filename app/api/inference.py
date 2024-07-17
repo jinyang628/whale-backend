@@ -22,6 +22,7 @@ def infer(input: InferenceRequest) -> InferenceResponse:
             f"{BASE_URL}/{SERVICE_ENDPOINT}", json=input.model_dump()
         )
         response.raise_for_status()
+        print(response)
         inference_response = InferenceResponse.model_validate(response.json())
         return inference_response
     except requests.RequestException as e:

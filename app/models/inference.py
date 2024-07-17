@@ -22,8 +22,8 @@ class HttpMethodResponse(BaseModel):
     application: ApplicationContent
     table_name: str
     inserted_rows: Optional[list[dict[str, Any]]] = None
-    filter_conditions: Optional[list[dict[str, Any]]] = None
-    updated_data: Optional[list[dict[str, Any]]] = None
+    filter_conditions: Optional[dict[str, Any]] = None
+    updated_data: Optional[dict[str, Any]] = None
     
 class InferenceResponse(BaseModel):
     response: list[HttpMethodResponse]

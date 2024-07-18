@@ -2,7 +2,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from sqlalchemy import BinaryExpression, or_, and_, select, delete, true, update
 from asyncpg.pgproto.pgproto import UUID as AsyncpgUUID
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker, aliased
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -107,7 +107,7 @@ class Orm:
         async with self.sessionmaker() as session:
             while True:
                 query = select(model)
-                filter_expression = _build_filter(model, filters)
+                filter_expression, _ = _build_filter(model, filters)
                 query = query.filter(filter_expression)
                 
                 query = query.limit(batch_size).offset(offset)
@@ -155,34 +155,32 @@ class Orm:
         model: Type[DeclarativeMeta], 
         filters: dict[str, Any], 
     ) -> list[dict[Any, dict]]:
-        """Deletes entries from the specified table based on the filters provided.
-
-        Args:
-            model (Type[DeclarativeMeta]): The SQLAlchemy model to delete data of.
-            filter_conditions (list[dict]): The filters to apply to the query.
-            is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
-
-        Returns:
-            list[dict[Any, dict]]: The data necessary to reverse the deletion.
-        """
         deleted_rows: list[dict[str, Any]] = []
-    
+
         async with self.sessionmaker() as session:
-            filter_expression = _build_filter(model, filters)
-                        
-            # Fetch column names directly from the database
+            filter_expression, params = _build_filter(model, filters)
+            
+            # Fetch column names
             table_name = model.__tablename__
             columns_query = text(f"SELECT column_name FROM information_schema.columns WHERE table_name = :table_name")
             result = await session.execute(columns_query, {'table_name': table_name})
             columns = [row[0] for row in result]
             
-            # Construct a query to select all columns for the rows to be deleted
-            print("HELP ME")
-            print(filter_expression)
+            # Construct the SELECT query
             columns_str = ', '.join(columns)
+            select_query = f"SELECT {columns_str} FROM {table_name}"
+            
+            # Convert the SQLAlchemy filter expression to a string
             where_clause = str(filter_expression)
-            select_query = text(f"SELECT {columns_str} FROM {table_name} WHERE {where_clause}")
-            result = await session.execute(select_query, filter_expression)
+            
+            # Combine SELECT query with WHERE clause
+            full_query = f"{select_query} WHERE {where_clause}"
+            
+            # Create a SQLAlchemy text object
+            stmt = text(full_query)
+            
+            # Execute the query with params
+            result = await session.execute(stmt, params)
             
             for row in result:
                 row_dict = {}
@@ -196,7 +194,7 @@ class Orm:
             
             # Perform the deletion
             delete_stmt = delete(model).where(filter_expression)
-            await session.execute(delete_stmt)
+            await session.execute(delete_stmt, params)
             await session.commit()
         
         return deleted_rows
@@ -338,39 +336,49 @@ class Orm:
                 offset += batch_size
         return results 
 
-def _build_filter(model: Type[DeclarativeMeta], filter_dict: dict[str, Any]) -> BinaryExpression:
+def _build_filter(model: Type[DeclarativeMeta], filter_dict: dict[str, Any], param_index: int = 0) -> tuple[BinaryExpression, dict]:
     """Recursively builds a SQLAlchemy filter expression from the provided filter dictionary."""
     if not filter_dict:
-        return true()
+        return true(), {}
     
     if 'boolean_clause' in filter_dict:
-        conditions = [_build_filter(model, condition) for condition in filter_dict['conditions']]
+        conditions = []
+        params = {}
+        for condition in filter_dict['conditions']:
+            sub_condition, sub_params = _build_filter(model, condition, param_index)
+            conditions.append(sub_condition)
+            params.update(sub_params)
+            param_index += len(sub_params)
+        
         if len(conditions) == 0:
-            return true()
+            return true(), {}
         elif len(conditions) == 1:
-            return conditions[0]  # If there's only one condition, return it directly
+            return conditions[0], params
         else:
-            return and_(*conditions) if filter_dict['boolean_clause'] == 'AND' else or_(*conditions)
+            return (and_(*conditions) if filter_dict['boolean_clause'] == 'AND' else or_(*conditions)), params
         
     elif 'column' in filter_dict and 'operator' in filter_dict and 'value' in filter_dict:
-        column = getattr(model, filter_dict['column'])
+        column = filter_dict['column']
         value = filter_dict['value']
+        param_name = f'param_{param_index}'
+        param_dict = {param_name: value}
+        
         if filter_dict['operator'] == '=':
-            return column == value
+            return text(f"{column} = :{param_name}"), param_dict
         elif filter_dict['operator'] == '!=':
-            return column != value
+            return text(f"{column} != :{param_name}"), param_dict
         elif filter_dict['operator'] == '>':
-            return column > value
+            return text(f"{column} > :{param_name}"), param_dict
         elif filter_dict['operator'] == '<':
-            return column < value
+            return text(f"{column} < :{param_name}"), param_dict
         elif filter_dict['operator'] == '>=':
-            return column >= value
+            return text(f"{column} >= :{param_name}"), param_dict
         elif filter_dict['operator'] == '<=':
-            return column <= value
+            return text(f"{column} <= :{param_name}"), param_dict
         elif filter_dict['operator'] == 'LIKE':
-            return column.like(value)
+            return text(f"{column} LIKE :{param_name}"), param_dict
         elif filter_dict['operator'] == 'IN':
-            return column.in_(value)
+            return text(f"{column} IN :{param_name}"), param_dict
         else:
             raise ValueError(f"Unsupported operator: {filter_dict['operator']}")
     

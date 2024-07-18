@@ -90,17 +90,6 @@ class Orm:
         filters: dict[str, Any], 
         batch_size: int = 6500
     ) -> list[dict[str, Any]]:
-        """Fetches entries from the specified table based on the filters provided.
-
-        Args:
-            orm_model (Type[DeclarativeMeta]): The SQLAlchemy ORM model to fetch data of.
-            pydantic_model (Type[BaseModel]): The pydantic model to validate the ORM model to.
-            filters (list[dict): The filters to apply to the query.
-            is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True (AND condition).
-
-        Returns:
-            list[FishBaseObject]: A list of FishBaseObject that match the filters.
-        """
         results = []
         offset = 0
         

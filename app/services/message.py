@@ -173,9 +173,6 @@ async def _execute(
             application_name=http_method_response.application.name
         )
         filter_dict: dict[str, Any] = {}
-        update_dict: dict[str, Any] = {}
-        if http_method_response.updated_data:
-            update_dict = {cond['column_name']: cond['column_value'] for cond in http_method_response.updated_data}
             
         match http_method_response.http_method:
             case HttpMethod.POST:
@@ -193,8 +190,8 @@ async def _execute(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     target_table=target_table,
-                    filter_dict=filter_dict,
-                    update_dict=update_dict,
+                    filter_dict=http_method_response.filter_conditions,
+                    update_dict=http_method_response.updated_data,
                     application_name=http_method_response.application.name
                 )
             case HttpMethod.DELETE:
@@ -278,6 +275,7 @@ async def _execute_put_method(
         original_client_dict=copied_filter_dict
     )
     
+    print("ERROR HERE!!@!@!@!@!@!@!@ need to separate this function from the filter dict one")
     copied_update_dict, _, _ = process_db_facing_dict(
         table=target_table,
         original_client_dict=copied_update_dict

@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel
-from sqlalchemy import or_, and_, select, delete, update
+from sqlalchemy import BinaryExpression, or_, and_, select, delete, true, update
 from asyncpg.pgproto.pgproto import UUID as AsyncpgUUID
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.decl_api import DeclarativeMeta
@@ -8,7 +8,6 @@ from sqlalchemy.sql import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from dotenv import find_dotenv, load_dotenv
 import os
-from sqlalchemy.dialects.postgresql import ENUM as PostgreSQLEnum
 
 import logging
 from typing import Any, Type
@@ -89,7 +88,6 @@ class Orm:
         self, 
         model: Type[DeclarativeMeta], 
         filters: dict[str, Any], 
-        is_and: bool = True, 
         batch_size: int = 6500
     ) -> list[dict[str, Any]]:
         """Fetches entries from the specified table based on the filters provided.
@@ -109,14 +107,12 @@ class Orm:
         async with self.sessionmaker() as session:
             while True:
                 query = select(model)
-                if filters:
-                    condition = and_ if is_and else or_                        
-                    query_filter = condition(*[getattr(model, column_name) == column_value for column_name, column_value in filters.items()])
-                    query = query.filter(query_filter)
+                filter_expression = _build_filter(model, filters)
+                query = query.filter(filter_expression)
                 
                 query = query.limit(batch_size).offset(offset)
                 batch_results = await session.execute(query)
-                batch_results = batch_results.scalars().all() 
+                batch_results = batch_results.scalars().all()
 
                 if not batch_results:
                     break
@@ -158,7 +154,6 @@ class Orm:
         self, 
         model: Type[DeclarativeMeta], 
         filters: dict[str, Any], 
-        is_and: bool = True,
     ) -> list[dict[Any, dict]]:
         """Deletes entries from the specified table based on the filters provided.
 
@@ -173,8 +168,7 @@ class Orm:
         deleted_rows: list[dict[str, Any]] = []
     
         async with self.sessionmaker() as session:
-            condition = and_ if is_and else or_
-            query_filter = condition(*[getattr(model, column_name) == column_value for column_name, column_value in filters.items()])
+            filter_expression = _build_filter(model, filters)
                         
             # Fetch column names directly from the database
             table_name = model.__tablename__
@@ -183,10 +177,12 @@ class Orm:
             columns = [row[0] for row in result]
             
             # Construct a query to select all columns for the rows to be deleted
+            print("HELP ME")
+            print(filter_expression)
             columns_str = ', '.join(columns)
-            where_clause = ' AND '.join([f"{key} = :{key}" for key in filters.keys()])
+            where_clause = str(filter_expression)
             select_query = text(f"SELECT {columns_str} FROM {table_name} WHERE {where_clause}")
-            result = await session.execute(select_query, filters)
+            result = await session.execute(select_query, filter_expression)
             
             for row in result:
                 row_dict = {}
@@ -199,7 +195,7 @@ class Orm:
                 deleted_rows.append(row_dict)
             
             # Perform the deletion
-            delete_stmt = delete(model).where(query_filter)
+            delete_stmt = delete(model).where(filter_expression)
             await session.execute(delete_stmt)
             await session.commit()
         
@@ -292,11 +288,11 @@ class Orm:
             query = select(orm_model)
             if names:
                 query_filter = or_(*[orm_model.name == name for name in names])
-                query = query.filter(query_filter)                
+                query = query.filter(query_filter)        
 
             results = await session.execute(query)
             results = results.scalars().all()
-        
+
         if not results:
             return []
         
@@ -342,26 +338,41 @@ class Orm:
                 offset += batch_size
         return results 
 
-def _convert_value_to_column_type(model, column_name, value):
-    column = getattr(model, column_name)
-    if isinstance(column.type, PostgreSQLEnum):
-        return column.type.enum_class(value)
-    return value
-
-# TODO: Integrate this? But probably better to have a pydantic model to handle this. Boolean clause class?
-def _build_filter_condition(self, model: Type[DeclarativeMeta], filters: dict[str, Any]):
-    """Recursively builds complex filter conditions."""
-    conditions = []
-    for key, value in filters.items():
-        if key.lower() == 'or':
-            conditions.append(or_(*[_build_filter_condition(model, sub_filter) for sub_filter in value]))
-        elif key.lower() == 'and':
-            conditions.append(and_(*[_build_filter_condition(model, sub_filter) for sub_filter in value]))
-        else:
-            attribute = getattr(model, key)
-            if isinstance(value, list):
-                conditions.append(attribute.in_(value))
-            else:
-                conditions.append(attribute == value)
+def _build_filter(model: Type[DeclarativeMeta], filter_dict: dict[str, Any]) -> BinaryExpression:
+    """Recursively builds a SQLAlchemy filter expression from the provided filter dictionary."""
+    if not filter_dict:
+        return true()
     
-    return and_(*conditions) if len(conditions) > 1 else conditions[0]
+    if 'boolean_clause' in filter_dict:
+        conditions = [_build_filter(model, condition) for condition in filter_dict['conditions']]
+        if len(conditions) == 0:
+            return true()
+        elif len(conditions) == 1:
+            return conditions[0]  # If there's only one condition, return it directly
+        else:
+            return and_(*conditions) if filter_dict['boolean_clause'] == 'AND' else or_(*conditions)
+        
+    elif 'column' in filter_dict and 'operator' in filter_dict and 'value' in filter_dict:
+        column = getattr(model, filter_dict['column'])
+        value = filter_dict['value']
+        if filter_dict['operator'] == '=':
+            return column == value
+        elif filter_dict['operator'] == '!=':
+            return column != value
+        elif filter_dict['operator'] == '>':
+            return column > value
+        elif filter_dict['operator'] == '<':
+            return column < value
+        elif filter_dict['operator'] == '>=':
+            return column >= value
+        elif filter_dict['operator'] == '<=':
+            return column <= value
+        elif filter_dict['operator'] == 'LIKE':
+            return column.like(value)
+        elif filter_dict['operator'] == 'IN':
+            return column.in_(value)
+        else:
+            raise ValueError(f"Unsupported operator: {filter_dict['operator']}")
+    
+    else:
+        raise ValueError(f"Invalid filter structure: {filter_dict}")

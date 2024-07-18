@@ -1,7 +1,6 @@
 import logging
 import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine
-from dotenv import find_dotenv, load_dotenv
 import os
 
 log = logging.getLogger(__name__)

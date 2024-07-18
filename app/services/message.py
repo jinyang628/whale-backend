@@ -174,8 +174,6 @@ async def _execute(
         )
         filter_dict: dict[str, Any] = {}
         update_dict: dict[str, Any] = {}
-        if http_method_response.filter_conditions:
-            filter_dict = {cond['column_name']: cond['column_value'] for cond in http_method_response.filter_conditions}
         if http_method_response.updated_data:
             update_dict = {cond['column_name']: cond['column_value'] for cond in http_method_response.updated_data}
             
@@ -206,7 +204,7 @@ async def _execute(
                     table_orm_model=table_orm_model,
                     http_method_response=http_method_response,
                     target_table=target_table,
-                    filter_dict=filter_dict,
+                    filter_dict=http_method_response.filter_conditions,
                     application_name=http_method_response.application.name
                 )
             case HttpMethod.GET:
@@ -216,7 +214,7 @@ async def _execute(
                     table_orm_model=table_orm_model,
                     application_name=http_method_response.application.name,
                     target_table=target_table,
-                    filter_dict=filter_dict
+                    filter_dict=http_method_response.filter_conditions
                 )
             case _:
                 raise ValueError(
@@ -277,12 +275,12 @@ async def _execute_put_method(
     log.info("Processing data for PUT request")
     copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_dict(
         table=target_table,
-        client_dict=copied_filter_dict
+        original_client_dict=copied_filter_dict
     )
     
     copied_update_dict, _, _ = process_db_facing_dict(
         table=target_table,
-        client_dict=copied_update_dict
+        original_client_dict=copied_update_dict
     )
     
     log.info("Initiating PUT request")
@@ -323,9 +321,17 @@ async def _execute_delete_method(
     table_orm_model: Type[DeclarativeMeta], 
     http_method_response: HttpMethodResponse,
     target_table: Table,
-    filter_dict: dict,
+    filter_dict: dict[str, Any],
     application_name: str
 ) -> tuple[str, list[dict[str, Any]], ReverseActionPost]:
+    
+    copied_filter_dict: list[dict[str, Any]] = copy.deepcopy(filter_dict)
+
+    log.info("Processing data for DELETE request")
+    copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_dict(
+        table=target_table,
+        original_client_dict=copied_filter_dict
+    )
     
     log.info("Initiating DELETE request")
     rows: list[dict[str, Any]] = await orm.delete_inference_result(
@@ -333,6 +339,12 @@ async def _execute_delete_method(
         filters=filter_dict,
     )
     log.info(f"Rows from DELETE request: {rows}")
+    
+    rows = process_client_facing_rows(
+        db_rows=rows,
+        datetime_column_names_to_process=datetime_column_names_to_process,
+        date_column_names_to_process=date_column_names_to_process
+    )
     
     message_content: str = f"The following {len(rows)} row(s) have been deleted from the {target_table.name} table of {http_method_response.application.name} by filtering {json.dumps(filter_dict)}:"
     
@@ -355,7 +367,7 @@ async def _execute_get_method(
     log.info("Processing data for GET request")
     copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_dict(
         table=target_table,
-        client_dict=copied_filter_dict
+        original_client_dict=copied_filter_dict
     )
     
     log.info("Initiating GET request")

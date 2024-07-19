@@ -12,7 +12,7 @@ from app.models.message import Message, PostMessageResponse, Role
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.dynamic import create_dynamic_orm
 from app.models.reverse import ReverseActionDelete, ReverseActionGet, ReverseActionPost, ReverseActionWrapper, ReverseActionUpdate
-from app.stores.utils.process import process_client_facing_dict, process_db_facing_dict, process_db_facing_rows, process_client_facing_rows
+from app.stores.utils.process import process_client_facing_dict, process_db_facing_filter_dict, process_db_facing_rows, process_client_facing_rows, process_db_facing_update_dict
 
 log = logging.getLogger(__name__)
 
@@ -270,13 +270,12 @@ async def _execute_put_method(
     copied_update_dict: list[dict[str, Any]] = copy.deepcopy(update_dict)
     
     log.info("Processing data for PUT request")
-    copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_dict(
+    copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_filter_dict(
         table=target_table,
         original_client_dict=copied_filter_dict
     )
     
-    print("ERROR HERE!!@!@!@!@!@!@!@ need to separate this function from the filter dict one")
-    copied_update_dict, _, _ = process_db_facing_dict(
+    copied_update_dict, _, _ = process_db_facing_update_dict(
         table=target_table,
         original_client_dict=copied_update_dict
     )
@@ -288,7 +287,7 @@ async def _execute_put_method(
         updated_data=copied_update_dict
     )
     log.info(f"Rows from PUT request: {rows}")
-
+    
     rows = process_client_facing_rows(
         db_rows=rows,
         datetime_column_names_to_process=datetime_column_names_to_process,
@@ -326,7 +325,7 @@ async def _execute_delete_method(
     copied_filter_dict: list[dict[str, Any]] = copy.deepcopy(filter_dict)
 
     log.info("Processing data for DELETE request")
-    copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_dict(
+    copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_filter_dict(
         table=target_table,
         original_client_dict=copied_filter_dict
     )
@@ -363,7 +362,7 @@ async def _execute_get_method(
     copied_filter_dict: list[dict[str, Any]] = copy.deepcopy(filter_dict)
 
     log.info("Processing data for GET request")
-    copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_dict(
+    copied_filter_dict, datetime_column_names_to_process, date_column_names_to_process = process_db_facing_filter_dict(
         table=target_table,
         original_client_dict=copied_filter_dict
     )

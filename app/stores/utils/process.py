@@ -17,21 +17,20 @@ def process_db_facing_rows(
     client_rows = _process_date_values_of_row(rows=client_rows, column_names_to_process=date_column_names_to_process)
     return client_rows
     
-def process_db_facing_dict(
+def process_db_facing_filter_dict(
     table: Table,
     original_client_dict: dict[str, Any]
 ) -> tuple[dict[str, Any], list[str], list[str]]:
     datetime_column_names_to_process, date_column_names_to_process = _identify_columns_to_process(
         table=table
     )
-    
-    original_client_dict = _process_datetime_or_date_values_of_dict(
+    original_client_dict = _process_datetime_or_date_values_of_filter_dict(
         dict_to_process=original_client_dict, 
         column_names_to_process=datetime_column_names_to_process,
         is_datetime=True
     )
     
-    original_client_dict = _process_datetime_or_date_values_of_dict(
+    original_client_dict = _process_datetime_or_date_values_of_filter_dict(
         dict_to_process=original_client_dict, 
         column_names_to_process=date_column_names_to_process,
         is_datetime=False
@@ -39,6 +38,26 @@ def process_db_facing_dict(
     
     return original_client_dict, datetime_column_names_to_process, date_column_names_to_process
     
+def process_db_facing_update_dict(
+    table: Table,
+    original_client_dict: dict[str, Any]
+) -> dict[str, Any]:
+    datetime_column_names_to_process, date_column_names_to_process = _identify_columns_to_process(
+        table=table
+    )
+    original_client_dict = _process_datetime_or_date_values_of_update_dict(
+        dict_to_process=original_client_dict, 
+        column_names_to_process=datetime_column_names_to_process,
+        is_datetime=True
+    )
+    original_client_dict = _process_datetime_or_date_values_of_update_dict(
+        dict_to_process=original_client_dict, 
+        column_names_to_process=date_column_names_to_process,
+        is_datetime=False
+    )
+    
+    return original_client_dict, datetime_column_names_to_process, date_column_names_to_process
+
 def process_client_facing_rows(
     db_rows: list[dict[str, Any]],
     datetime_column_names_to_process: list[str],
@@ -101,7 +120,7 @@ def _process_date_values_of_row(rows: list[dict[str, Any]], column_names_to_proc
         
     return modified_rows
 
-def _process_datetime_or_date_values_of_dict(
+def _process_datetime_or_date_values_of_filter_dict(
     dict_to_process: dict[str, Any], 
     column_names_to_process: list[str],
     is_datetime: bool
@@ -130,7 +149,22 @@ def _process_datetime_or_date_values_of_dict(
         dict_to_process["conditions"] = process_conditions_helper(dict_to_process["conditions"])
     return dict_to_process
 
-
+def _process_datetime_or_date_values_of_update_dict(
+    dict_to_process: dict[str, Any], 
+    column_names_to_process: list[str],
+    is_datetime: bool
+) -> dict[str, Any]:
+    for key, value in dict_to_process.items():
+        if key not in column_names_to_process:
+            continue
+        if not value:
+            continue
+        
+        if is_datetime:
+            dict_to_process[key] = parser.parse(value)
+        else:
+            dict_to_process[key] = parser.parse(value).date()
+    return dict_to_process
 
 # Input shape of filter dict
 """

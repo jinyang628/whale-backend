@@ -193,8 +193,7 @@ class Orm:
         model: Type[DeclarativeMeta], 
         filters: dict[str, Any], 
         updated_data: dict[str, Any], 
-        is_and: bool = True
-    ) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
         """Updates entries in the specified table based on the filters provided.
 
         Args:
@@ -215,35 +214,70 @@ class Orm:
         reverse_filters: list[dict[str, str]] = []
         
         async with self.sessionmaker() as session:
-            condition = and_ if is_and else or_
-            query_filter = condition(*[getattr(model, column_name) == column_value for column_name, column_value in filters.items()])
+            filter_expression, params = _build_filter(model, filters)
             
-            # Fetch the original rows before update
-            select_stmt = select(model).where(query_filter)
-            result = await session.execute(select_stmt)
-            original_rows = result.scalars().all()
+            # Fetch column names
+            table_name = model.__tablename__
+            columns_query = text(f"SELECT column_name FROM information_schema.columns WHERE table_name = :table_name")
+            result = await session.execute(columns_query, {'table_name': table_name})
+            columns = [row[0] for row in result]
             
-            # Store original values and create filter conditions
-            for row in original_rows:
-                original_dict = {column.name: getattr(row, column.name) for column in model.__table__.columns}
-                original_results.append(original_dict)
-                reverse_filters.append({"id": row.id})
+            # Construct the SELECT query
+            columns_str = ', '.join(columns)
+            select_query = f"SELECT {columns_str} FROM {table_name}"
+            
+            # Convert the SQLAlchemy filter expression to a string
+            where_clause = str(filter_expression)
+            
+            # Combine SELECT query with WHERE clause
+            full_query = f"{select_query} WHERE {where_clause}"
+            
+            # Create a SQLAlchemy text object
+            select_stmt = text(full_query)
+            
+            # Execute the query with params
+            result = await session.execute(select_stmt, params)
+            
+            for row in result:
+                row_dict = {}
+                for column, value in zip(columns, row):
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
+                    if isinstance(value, AsyncpgUUID):
+                        value = str(value)
+                    row_dict[column] = value
+                original_results.append(row_dict)
+                reverse_filter = {
+                    "boolean_clause": "AND", 
+                    "conditions": [
+                        {
+                            "column": "id",
+                            "operator": "=",
+                            "value": row_dict['id']
+                        }
+                    ]
+                }
+                reverse_filters.append(reverse_filter)
             
             # Perform the update
-            update_values = {key: value for key, value in updated_data.items()}
-            update_stmt = update(model).where(query_filter).values(**update_values)
-            await session.execute(update_stmt)
+            update_stmt = update(model).where(filter_expression).values(**updated_data)
+            await session.execute(update_stmt, params)
             await session.commit()
             
             # Fetch the updated rows
-            result = await session.execute(select_stmt)
-            updated_rows = result.scalars().all()
+            result = await session.execute(select_stmt, params)
             
             # Convert the updated rows to dictionaries
-            for row in updated_rows:
-                row_dict = {column.name: getattr(row, column.name) for column in model.__table__.columns}
+            for row in result:
+                row_dict = {}
+                for column, value in zip(columns, row):
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
+                    if isinstance(value, AsyncpgUUID):
+                        value = str(value)
+                    row_dict[column] = value
                 updated_results.append(row_dict)
-            
+                
             log.info(f"Updated {len(updated_results)} rows in database")
         
         # Create reverse updated_data

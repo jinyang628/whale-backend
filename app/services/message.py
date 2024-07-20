@@ -11,6 +11,7 @@ from app.models.message import Message, PostMessageResponse, Role
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.dynamic import create_dynamic_orm
 from app.models.reverse import ReverseActionClarification, ReverseActionDelete, ReverseActionGet, ReverseActionPost, ReverseActionWrapper, ReverseActionUpdate
+from app.stores.utils.frontend_message import translate_filter_dict
 from app.stores.utils.process import identify_columns_to_process, process_client_facing_filter_dict, process_client_facing_update_dict, process_datetime_or_date_values_of_filter_dict, process_datetime_or_date_values_of_update_dict, process_datetime_values_of_row, process_client_facing_rows
 
 log = logging.getLogger(__name__)
@@ -323,7 +324,7 @@ async def _execute_put_method(
         date_column_names_to_process=date_column_names_to_process
     )
     
-    message_content: str = f"The following {len(rows)} row(s) have been updated in the {target_table.name} table of {application_name} by filtering {json.dumps(filter_dict)}:"
+    message_content: str = f"The following {len(rows)} row(s) have been updated in the {target_table.name} table of {application_name} by filtering {translate_filter_dict(filter_dict)}:"
     
     return message_content, rows, ReverseActionUpdate(
         reverse_filter_conditions=reverse_filters, 
@@ -366,7 +367,7 @@ async def _execute_delete_method(
         date_column_names_to_process=date_column_names_to_process
     )
     
-    message_content: str = f"The following {len(rows)} row(s) have been deleted from the {target_table.name} table of {http_method_response.application.name} by filtering {json.dumps(filter_dict)}:"
+    message_content: str = f"The following {len(rows)} row(s) have been deleted from the {target_table.name} table of {http_method_response.application.name} by filtering {translate_filter_dict(filter_dict)}:"
     
     return message_content, rows, ReverseActionPost(
         deleted_data=rows, 
@@ -407,6 +408,6 @@ async def _execute_get_method(
         date_column_names_to_process=date_column_names_to_process
     )
 
-    message_content: str = f"The following row(s) have been retrieved from the {target_table.name} table of {application_name} by filtering {json.dumps(filter_dict)}:"
+    message_content: str = f"The following row(s) have been retrieved from the {target_table.name} table of {application_name} by filtering {translate_filter_dict(filter_dict)}:"
 
     return message_content, rows, ReverseActionGet()

@@ -96,11 +96,11 @@ class Orm:
         async with self.sessionmaker() as session:
             while True:
                 query = select(model)
-                filter_expression, _ = _build_filter(model, filters)
+                filter_expression, params = _build_filter(model, filters)
                 query = query.filter(filter_expression)
                 
                 query = query.limit(batch_size).offset(offset)
-                batch_results = await session.execute(query)
+                batch_results = await session.execute(query, params)
                 batch_results = batch_results.scalars().all()
 
                 if not batch_results:

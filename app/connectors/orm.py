@@ -284,6 +284,8 @@ class Orm:
         reverse_updated_data = []
         for original, updated in zip(original_results, updated_results):
             for key, value in updated.items():
+                if key == "updated_at":
+                    continue
                 if original[key] != value:
                     reverse_updated_data.append({key: original[key]})
         return updated_results, reverse_filters, reverse_updated_data
@@ -394,7 +396,8 @@ def _build_filter(model: Type[DeclarativeMeta], filter_dict: dict[str, Any], par
             '>=': '{} >= :{}',
             '<=': '{} <= :{}',
             'LIKE': '{} LIKE :{}',
-            'IN': '{} IN (:{})' if isinstance(value, (list, tuple)) else '{} IN (:{})'
+            'IN': '{} IN (:{})' if isinstance(value, (list, tuple)) else '{} IN (:{})',
+            'IS NOT': '{} IS NOT NULL' if value is None else '{} != :{}'
         }
         
         if filter_dict['operator'] in operators:

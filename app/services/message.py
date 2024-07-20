@@ -11,7 +11,7 @@ from app.models.message import Message, PostMessageResponse, Role
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.dynamic import create_dynamic_orm
 from app.models.reverse import ReverseActionClarification, ReverseActionDelete, ReverseActionGet, ReverseActionPost, ReverseActionWrapper, ReverseActionUpdate
-from app.stores.utils.process import identify_columns_to_process, process_client_facing_update_dict, process_datetime_or_date_values_of_filter_dict, process_datetime_or_date_values_of_update_dict, process_datetime_values_of_row, process_client_facing_rows
+from app.stores.utils.process import identify_columns_to_process, process_client_facing_filter_dict, process_client_facing_update_dict, process_datetime_or_date_values_of_filter_dict, process_datetime_or_date_values_of_update_dict, process_datetime_values_of_row, process_client_facing_rows
 
 log = logging.getLogger(__name__)
 

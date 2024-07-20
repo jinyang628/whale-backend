@@ -193,7 +193,7 @@ class Orm:
         model: Type[DeclarativeMeta], 
         filters: dict[str, Any], 
         updated_data: dict[str, Any], 
-    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    ) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
         """Updates entries in the specified table based on the filters provided.
 
         Args:
@@ -203,7 +203,7 @@ class Orm:
             is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True.
 
         Returns:
-            tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]: 
+            tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]: 
             A tuple containing:
             1. The updated rows
             2. The data necessary to reverse the update
@@ -211,7 +211,7 @@ class Orm:
         
         updated_results: list[dict[str, Any]] = []
         original_results: list[dict[str, Any]] = []
-        reverse_filters: list[dict[str, str]] = []
+        reverse_filters: dict[str, str] = {"boolean_clause": "OR", "conditions": []}
         
         async with self.sessionmaker() as session:
             filter_expression, params = _build_filter(model, filters)
@@ -247,17 +247,13 @@ class Orm:
                         value = str(value)
                     row_dict[column] = value
                 original_results.append(row_dict)
-                reverse_filter = {
-                    "boolean_clause": "AND", 
-                    "conditions": [
-                        {
-                            "column": "id",
-                            "operator": "=",
-                            "value": row_dict['id']
-                        }
-                    ]
-                }
-                reverse_filters.append(reverse_filter)
+                reverse_filters["conditions"].append(
+                    {
+                        "column": "id",
+                        "operator": "=",
+                        "value": row_dict['id']
+                    }
+                )
             
             # Perform the update
             update_stmt = update(model).where(filter_expression).values(**updated_data)
@@ -265,7 +261,11 @@ class Orm:
             await session.commit()
             
             # Fetch the updated rows
-            result = await session.execute(select_stmt, params)
+            updated_filter_expression, updated_params = _build_filter(model, reverse_filters)
+            updated_where_clause = str(updated_filter_expression)
+            updated_full_query = f"{select_query} WHERE {updated_where_clause}"
+            updated_select_stmt = text(updated_full_query)
+            result = await session.execute(updated_select_stmt, updated_params)
             
             # Convert the updated rows to dictionaries
             for row in result:
@@ -277,17 +277,19 @@ class Orm:
                         value = str(value)
                     row_dict[column] = value
                 updated_results.append(row_dict)
-                
+                            
             log.info(f"Updated {len(updated_results)} rows in database")
         
         # Create reverse updated_data
-        reverse_updated_data = []
-        for original, updated in zip(original_results, updated_results):
-            for key, value in updated.items():
-                if key == "updated_at":
-                    continue
-                if original[key] != value:
-                    reverse_updated_data.append({key: original[key]})
+        reverse_updated_data = {}
+        updated_sample = updated_results[0]
+        original_sample = original_results[0]
+        
+        for key, value in updated_sample.items():
+            if key == "updated_at":
+                continue
+            if original_sample[key] != value:
+                reverse_updated_data[key] = original_sample[key]
         return updated_results, reverse_filters, reverse_updated_data
     
     async def get_application(

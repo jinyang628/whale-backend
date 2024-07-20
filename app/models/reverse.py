@@ -17,8 +17,8 @@ class ReverseActionDelete(ReverseAction):
 
 class ReverseActionUpdate(ReverseAction):
     action_type: Literal["update"] = "update"
-    reverse_filter_conditions: list[dict[str, Any]]
-    reverse_updated_data: list[dict[str, Any]]
+    reverse_filter_conditions: dict[str, Any]
+    reverse_updated_data: dict[str, Any]
     target_table: Table
     application_name: str
     

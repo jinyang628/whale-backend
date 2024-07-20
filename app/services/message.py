@@ -149,15 +149,14 @@ async def _reverse_with_post(
 async def _reverse_with_put(
     orm: Orm,
     table_orm_model: Type[DeclarativeMeta],
-    reverse_filter_conditions: list[dict[str, Any]],
-    reverse_updated_data: list[dict[str, Any]]
+    reverse_filter_conditions: dict[str, Any],
+    reverse_updated_data: dict[str, Any]
 ):
-    for filters, updated_data in zip(reverse_filter_conditions, reverse_updated_data):
-        await orm.update_inference_result(
-            model=table_orm_model,
-            filters=filters,
-            updated_data=updated_data
-        )
+    await orm.update_inference_result(
+        model=table_orm_model,
+        filters=reverse_filter_conditions,
+        updated_data=reverse_updated_data
+    )
     
 ###
 ### INFERENCE SECTION
@@ -327,8 +326,10 @@ async def _execute_put_method(
     message_content: str = f"The following {len(rows)} row(s) have been updated in the {target_table.name} table of {application_name} by filtering {json.dumps(filter_dict)}:"
     
     return message_content, rows, ReverseActionUpdate(
-        reverse_filter_conditions=reverse_filters, reverse_updated_data=reverse_updated_data, 
-        target_table=target_table, application_name=application_name
+        reverse_filter_conditions=reverse_filters, 
+        reverse_updated_data=reverse_updated_data, 
+        target_table=target_table, 
+        application_name=application_name
         )
 
 async def _execute_delete_method(

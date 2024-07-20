@@ -3,7 +3,6 @@ import json
 import logging
 from typing import Any, Optional, Type
 from sqlalchemy.orm.decl_api import DeclarativeMeta
-from asyncpg.pgproto.pgproto import UUID as AsyncpgUUID
 import uuid
 from app.connectors.orm import Orm
 from app.models.application import Table
@@ -11,7 +10,7 @@ from app.models.inference import ApplicationContent, HttpMethod, HttpMethodRespo
 from app.models.message import Message, PostMessageResponse, Role
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.dynamic import create_dynamic_orm
-from app.models.reverse import ReverseActionDelete, ReverseActionGet, ReverseActionPost, ReverseActionWrapper, ReverseActionUpdate
+from app.models.reverse import ReverseActionClarification, ReverseActionDelete, ReverseActionGet, ReverseActionPost, ReverseActionWrapper, ReverseActionUpdate
 from app.stores.utils.process import process_client_facing_dict, process_db_facing_filter_dict, process_db_facing_rows, process_client_facing_rows, process_db_facing_update_dict
 
 log = logging.getLogger(__name__)
@@ -46,7 +45,18 @@ class MessageService:
         chat_history: list[Message],
         reverse_stack: list[ReverseActionWrapper],
         inference_response: InferenceResponse
-    ) -> PostMessageResponse:        
+    ) -> PostMessageResponse:   
+        if inference_response.clarification:
+            response_message_lst = [Message(role=Role.ASSISTANT, content=inference_response.clarification)]
+            chat_history.append(user_message)
+            chat_history.extend(response_message_lst)
+            reverse_stack.append(ReverseActionWrapper(action=ReverseActionClarification()))
+            return PostMessageResponse(
+                message_lst=response_message_lst,
+                chat_history=chat_history,
+                reverse_stack=reverse_stack
+            )    
+             
         response_message_lst, response_reverse_action_lst = await _execute(
             inference_response=inference_response
         )
@@ -65,7 +75,7 @@ class MessageService:
         self,
         input: ReverseActionWrapper
     ):
-        if input.action.action_type == "get":
+        if input.action.action_type == "get" or input.action.action_type == "clarification":
             return
         
         orm = Orm(is_user_facing=True)
@@ -172,7 +182,6 @@ async def _execute(
             table=target_table,
             application_name=http_method_response.application.name
         )
-        filter_dict: dict[str, Any] = {}
             
         match http_method_response.http_method:
             case HttpMethod.POST:

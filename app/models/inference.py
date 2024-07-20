@@ -27,4 +27,5 @@ class HttpMethodResponse(BaseModel):
     
 class InferenceResponse(BaseModel):
     response: list[HttpMethodResponse]
+    clarification: Optional[str] = None
     

@@ -24,3 +24,4 @@ class PostMessageResponse(BaseModel):
     message_lst: list[Message]
     chat_history: list[Message]
     reverse_stack: list[ReverseActionWrapper]
+    clarification: Optional[str] = None

@@ -37,7 +37,10 @@ class ReverseActionPost(ReverseAction):
 class ReverseActionGet(ReverseAction):
     action_type: Literal["get"] = "get"
 
-ReverseActionUnion = ReverseActionDelete | ReverseActionUpdate | ReverseActionPost | ReverseActionGet
+class ReverseActionClarification(ReverseAction):
+    action_type: Literal["clarification"] = "clarification"
+
+ReverseActionUnion = ReverseActionDelete | ReverseActionUpdate | ReverseActionPost | ReverseActionGet | ReverseActionClarification
 
 class ReverseActionWrapper(BaseModel):
     action: ReverseActionUnion = Field(..., discriminator="action_type")

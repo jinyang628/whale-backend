@@ -359,7 +359,8 @@ class Orm:
                 offset += batch_size
         return results 
 
-def _build_filter(model: Type[DeclarativeMeta], filter_dict: dict[str, Any], param_index: int = 0) -> tuple[BinaryExpression, dict]:
+
+def _build_filter(model: Type[DeclarativeMeta], filter_dict: dict[str, Any], param_prefix: str = 'p') -> tuple[BinaryExpression, dict]:
     """Recursively builds a SQLAlchemy filter expression from the provided filter dictionary."""
     if not filter_dict:
         return true(), {}
@@ -367,11 +368,10 @@ def _build_filter(model: Type[DeclarativeMeta], filter_dict: dict[str, Any], par
     if 'boolean_clause' in filter_dict:
         conditions = []
         params = {}
-        for condition in filter_dict['conditions']:
-            sub_condition, sub_params = _build_filter(model, condition, param_index)
+        for idx, condition in enumerate(filter_dict['conditions']):
+            sub_condition, sub_params = _build_filter(model, condition, f"{param_prefix}_{idx}")
             conditions.append(sub_condition)
             params.update(sub_params)
-            param_index += len(sub_params)
         
         if len(conditions) == 0:
             return true(), {}
@@ -383,25 +383,27 @@ def _build_filter(model: Type[DeclarativeMeta], filter_dict: dict[str, Any], par
     elif 'column' in filter_dict and 'operator' in filter_dict and 'value' in filter_dict:
         column = filter_dict['column']
         value = filter_dict['value']
-        param_name = f'param_{param_index}'
+        param_name = f"{param_prefix}"
         param_dict = {param_name: value}
         
-        if filter_dict['operator'] == '=':
-            return text(f"{column} = :{param_name}"), param_dict
-        elif filter_dict['operator'] == '!=':
-            return text(f"{column} != :{param_name}"), param_dict
-        elif filter_dict['operator'] == '>':
-            return text(f"{column} > :{param_name}"), param_dict
-        elif filter_dict['operator'] == '<':
-            return text(f"{column} < :{param_name}"), param_dict
-        elif filter_dict['operator'] == '>=':
-            return text(f"{column} >= :{param_name}"), param_dict
-        elif filter_dict['operator'] == '<=':
-            return text(f"{column} <= :{param_name}"), param_dict
-        elif filter_dict['operator'] == 'LIKE':
-            return text(f"{column} LIKE :{param_name}"), param_dict
-        elif filter_dict['operator'] == 'IN':
-            return text(f"{column} IN :{param_name}"), param_dict
+        operators = {
+            '=': '{} = :{}',
+            '!=': '{} != :{}',
+            '>': '{} > :{}',
+            '<': '{} < :{}',
+            '>=': '{} >= :{}',
+            '<=': '{} <= :{}',
+            'LIKE': '{} LIKE :{}',
+            'IN': '{} IN (:{})' if isinstance(value, (list, tuple)) else '{} IN (:{})'
+        }
+        
+        if filter_dict['operator'] in operators:
+            if filter_dict['operator'] == 'IN' and isinstance(value, (list, tuple)):
+                in_params = {f"{param_name}_{i}": v for i, v in enumerate(value)}
+                in_clause = ', '.join(f":{param_name}_{i}" for i in range(len(value)))
+                return text(f"{column} IN ({in_clause})"), in_params
+            else:
+                return text(operators[filter_dict['operator']].format(column, param_name)), param_dict
         else:
             raise ValueError(f"Unsupported operator: {filter_dict['operator']}")
     

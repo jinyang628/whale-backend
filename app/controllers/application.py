@@ -9,6 +9,7 @@ from app.exceptions.exception import DatabaseError
 from app.models.application import (
     PostApplicationRequest,
     PostApplicationResponse,
+    SelectApplicationRequest,
     SelectApplicationResponse,
 )
 from app.services.application import ApplicationService
@@ -47,16 +48,17 @@ class ApplicationController:
                     status_code=500, detail="An unexpected error occurred"
                 ) from e
 
-        @router.get("/select")
-        async def select(name: str) -> JSONResponse:
+        @router.post("/select")
+        async def select(input: SelectApplicationRequest) -> JSONResponse:
             try:
                 response: Optional[SelectApplicationResponse] = (
-                    await self.service.select(name=name)
+                    await self.service.select(name=input.name)
                 )
                 if not response:
                     return HTTPException(
                         status_code=404, detail="Application not found"
                     )
+                await self.service.cache(name=input.name, user_email=input.user_email)
                 return JSONResponse(status_code=200, content=response.model_dump())
             except DatabaseError as e:
                 log.error("Database error: %s", str(e))

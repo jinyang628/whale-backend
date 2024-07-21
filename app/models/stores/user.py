@@ -1,4 +1,5 @@
 import json
+from typing import Any
 from app.models.stores.base import BaseObject
 from app.models.utils import sql_value_to_typed_value
 from sqlalchemy import JSON, UUID, Column, Integer, String, DateTime
@@ -9,36 +10,31 @@ import logging
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-ENTRY_VERSION: int = 1
-
 Base = declarative_base()
 
-class ApplicationORM(Base):
-    __tablename__ = "application"
+class UserORM(Base):
+    __tablename__ = "user"
     
     id = Column(UUID(as_uuid=True), primary_key=True)
-    version = Column(Integer, nullable=False)
-    name = Column(String, nullable=False)
-    tables = Column(JSON, nullable=False)
+    email = Column(String, nullable=False)
+    applications = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, default=func.now(), onupdate=func.now())
     
-class Application(BaseObject):
-    version: int
-    name: str
-    tables: str
+class User(BaseObject):
+    email: str
+    applications: dict
 
     @classmethod
     def local(
         cls,
-        name: str,
-        tables: list[dict],
+        email: str,
+        applications: dict[str, Any],
     ):
-        return Application(
-            id=Application.generate_id(),
-            version=ENTRY_VERSION,
-            name=name,
-            tables=json.dumps(tables),
+        return User(
+            id=User.generate_id(),
+            email=email,
+            applications=applications,
         )
 
     @classmethod
@@ -48,7 +44,5 @@ class Application(BaseObject):
     ):
         return cls(
             id=sql_value_to_typed_value(dict=kwargs, key="id", type=str),
-            version=sql_value_to_typed_value(dict=kwargs, key="version", type=int),
-            name=sql_value_to_typed_value(dict=kwargs, key="name", type=str),
-            tables=sql_value_to_typed_value(dict=kwargs, key="tables", type=str),
+            applications=sql_value_to_typed_value(dict=kwargs, key="applications", type=dict),
         )

@@ -292,11 +292,12 @@ class Orm:
                 reverse_updated_data[key] = original_sample[key]
         return updated_results, reverse_filters, reverse_updated_data
     
-    async def get_application(
+    async def static_get(
         self, 
         orm_model: Type[DeclarativeMeta], 
         pydantic_model: Type[BaseModel],
-        names: list[str], 
+        filters: dict[str, Any],
+        batch_size: int = 6500
     ) -> list[BaseObject]:
         """Fetches entries from the specified table based on the filters provided.
 
@@ -306,22 +307,74 @@ class Orm:
             filters (list[dict): The filters to apply to the query.
 
         Returns:
-            list[FishBaseObject]: A list of FishBaseObject that match the filters.
+            list[BaseObject]: A list of BaseObject that match the filters.
         """
         results = []
+        offset = 0
+        
         async with self.sessionmaker() as session:
-            query = select(orm_model)
-            if names:
-                query_filter = or_(*[orm_model.name == name for name in names])
-                query = query.filter(query_filter)        
+            while True:
+                query = select(orm_model)
+                filter_expression, params = _build_filter(orm_model, filters)
+                query = query.filter(filter_expression)
+                
+                query = query.limit(batch_size).offset(offset)
+                batch_results = await session.execute(query, params)
+                batch_results = batch_results.scalars().all()
 
-            results = await session.execute(query)
-            results = results.scalars().all()
-
+                if not batch_results:
+                    break
+                
+                results.extend(batch_results)
+                offset += batch_size        
+                log.info(f"Fetching {results} from database")
+        
         if not results:
             return []
         
         return [pydantic_model.model_validate(result) for result in results]
+    
+    async def static_post(
+        self,
+        orm_model: Type[DeclarativeMeta],
+        data: list[dict[str, Any]]
+    ) -> list[BaseObject]:
+        """Inserts entries into the specified table.
+
+        Args:
+            orm_model (Type[DeclarativeMeta]): The SQLAlchemy ORM model to insert data into.
+            data (list[dict[str, Any]]): The data to insert.
+
+        Returns:
+            list[BaseObject]: A list of BaseObject that were inserted.
+        """
+        orm_instances = [orm_model(**item) for item in data]
+        
+        async with self.sessionmaker() as session:
+            session.add_all(orm_instances)
+            await session.flush()      
+            await session.commit()
+            log.info(f"Inserted {len(data)} rows into {orm_model.__tablename__}")
+    
+    async def static_update(
+        self,
+        orm_model: Type[DeclarativeMeta],
+        filters: dict[str, Any],
+        updated_data: dict[str, Any],
+    ):
+        """Updates entries in the specified table based on the filters provided.
+
+        Args:
+            orm_model (Type[DeclarativeMeta]): The SQLAlchemy model to update data of.
+            filters (dict): The filters to apply to the query.
+            updated_data (dict): The updates to apply to the target rows.
+        """
+        async with self.sessionmaker() as session:
+            filter_expression, params = _build_filter(orm_model, filters)
+            update_stmt = update(orm_model).where(filter_expression).values(**updated_data)
+            await session.execute(update_stmt, params)
+            await session.commit()
+            log.info(f"Updated rows in {orm_model.__tablename__}")
     
     ### Miscellaneous ###
     def get_column(self, model: Type[DeclarativeMeta], column: str, filters: dict, is_and: bool = True, batch_size: int = 6500) -> list[Any]:

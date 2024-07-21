@@ -11,6 +11,7 @@ from app.models.application import (
     SelectApplicationResponse,
     Table,
 )
+from app.models.stores.user import User, UserORM
 from app.stores.base.main import execute_client_script
 from app.stores.sqls.template import generate_foreign_key_script, generate_table_creation_script
 
@@ -71,8 +72,10 @@ class ApplicationService:
     ) -> Optional[SelectApplicationResponse]:
         """Selects the entry from the application table."""
         orm = Orm(is_user_facing=False)
-        result: list[Application] = await orm.get_application(
-            orm_model=ApplicationORM, pydantic_model=Application, names=[name]
+        result: list[Application] = await orm.static_get(
+            orm_model=ApplicationORM, 
+            pydantic_model=Application, 
+            filters={"boolean_clause": "AND", "conditions": [{"column": "name", "operator": "=", "value": name}]}
         )
         if len(result) != 1:
             return None
@@ -82,3 +85,25 @@ class ApplicationService:
             tables=[Table.model_validate(table) for table in json.loads(app.tables)],
         )
         return SelectApplicationResponse(application=application_content)
+    
+    async def cache(self, name: str, user_email: str):
+        """Caches the application which the user selected in the database."""
+        orm = Orm(is_user_facing=False)
+        result: list[User] = await orm.static_get(
+            orm_model=UserORM, 
+            pydantic_model=User, 
+            filters={"boolean_clause": "AND", "conditions": [{"column": "email", "operator": "=", "value": user_email}]}
+        )
+        if len(result) < 1:
+            raise ValueError(f"User of email {user_email} not found.")
+        if len(result) > 1:
+            raise ValueError(f"Multiple users found for email {user_email}")
+        user: User = result[0]
+        cached_applications: Optional[dict[str, list[str]]] = user.applications
+        if not cached_applications:
+            cached_applications = {"applications": [name]}
+        else:  
+            cached_applications["applications"].append(name)
+        await orm.static_update(
+            orm_model=UserORM, filters={"boolean_clause": "AND", "conditions": [{"column": "id", "operator": "=", "value": user.id}]}, updated_data={"applications": cached_applications}
+        )

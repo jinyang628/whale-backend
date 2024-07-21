@@ -24,10 +24,10 @@ class MessageService:
         self, application_names: list[str]
     ) -> list[ApplicationContent]:
         orm = Orm(is_user_facing=False)
-        applications: list[Application] = await orm.get_application(
+        applications: list[Application] = await orm.static_get(
             orm_model=ApplicationORM, 
             pydantic_model=Application,
-            names=application_names
+            filters={"boolean_clause": "OR", "conditions": [{"column": "name", "operator": "=", "value": name} for name in application_names]}
         )
         application_content_lst: list[ApplicationContent] = []
         for application in applications:

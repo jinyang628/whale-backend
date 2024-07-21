@@ -134,6 +134,10 @@ class PostApplicationResponse(BaseModel):
 
     class Config:
         extra = "forbid"
+        
+class SelectApplicationRequest(BaseModel):
+    user_email: str 
+    name: str
 
 class SelectApplicationResponse(BaseModel):
     application: ApplicationContent

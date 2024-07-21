@@ -9,11 +9,5 @@ class BaseObject(BaseModel):
         from_attributes = True
 
     @staticmethod
-    def generate_id(
-        **kwargs,
-    ) -> uuid.UUID:
-        for k, v in kwargs.items():
-            if v is None:
-                raise Exception(f"Cannot generate id with None value for key {k}")
-
-        return uuid.uuid3(uuid.NAMESPACE_DNS, "-".join([str(v) for v in kwargs.values()]))
+    def generate_id() -> uuid.UUID:
+        return uuid.uuid4()

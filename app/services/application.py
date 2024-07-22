@@ -76,7 +76,10 @@ class ApplicationService:
         result: list[Application] = await orm.static_get(
             orm_model=ApplicationORM, 
             pydantic_model=Application, 
-            filters={"boolean_clause": "AND", "conditions": [{"column": "name", "operator": "=", "value": name}]}
+            filters={
+                "boolean_clause": "AND", 
+                "conditions": [{"column": "name", "operator": "=", "value": name}]
+            }
         )
         if len(result) != 1:
             return None
@@ -88,15 +91,16 @@ class ApplicationService:
         return SelectApplicationResponse(application=application_content)
     
     # RETHINK THIS method because frontend should just pass the whole list instead of only the newly added only
-    async def insert_cache(self, name: str, user_email: str):
+    async def insert_cache(self, names: list[str], user_email: str):
         """Caches the application which the user selected in the database."""
         orm = Orm(is_user_facing=False)
-        user: User = await UserService().get(user_email=user_email)
-        cached_applications: Optional[dict[str, list[str]]] = user.applications
-        if not cached_applications:
-            cached_applications = {"applications": [name]}
-        else:  
-            cached_applications["applications"].append(name)
+        print(names)
+        print(user_email)
         await orm.static_update(
-            orm_model=UserORM, filters={"boolean_clause": "AND", "conditions": [{"column": "id", "operator": "=", "value": user.id}]}, updated_data={"applications": cached_applications}
+            orm_model=UserORM, 
+            filters={
+                "boolean_clause": "AND", 
+                "conditions": [{"column": "email", "operator": "=", "value": user_email}]
+            }, 
+            updated_data={"applications": names}
         )

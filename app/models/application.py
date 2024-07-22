@@ -137,7 +137,8 @@ class PostApplicationResponse(BaseModel):
         
 class SelectApplicationRequest(BaseModel):
     user_email: str 
-    name: str
+    new_application_name: str
+    all_application_names: list[str]
 
 class SelectApplicationResponse(BaseModel):
     application: ApplicationContent

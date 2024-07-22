@@ -52,13 +52,14 @@ class ApplicationController:
         async def select(input: SelectApplicationRequest) -> JSONResponse:
             try:
                 response: Optional[SelectApplicationResponse] = (
-                    await self.service.select(name=input.name)
+                    await self.service.select(name=input.new_application_name)
                 )
                 if not response:
                     return HTTPException(
                         status_code=404, detail="Application not found"
                     )
-                await self.service.insert_cache(name=input.name, user_email=input.user_email)
+                input.all_application_names.append(input.new_application_name)
+                await self.service.insert_cache(names=input.all_application_names, user_email=input.user_email)
                 return JSONResponse(status_code=200, content=response.model_dump())
             except DatabaseError as e:
                 log.error("Database error: %s", str(e))

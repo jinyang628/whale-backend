@@ -1,6 +1,5 @@
-import json
 import logging
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
@@ -29,12 +28,11 @@ class UserController:
         @router.patch("/cache/update")
         async def update_cache(input: UpdateCacheRequest) -> JSONResponse:
             try:
-                print(input)
                 await self.service.update(
                     filters={"boolean_clause": "AND", "conditions": [{"column": "email", "operator": "=", "value": input.user_email}]},
-                    updated_data={"applications": {"applications" : input.applications }}
+                    updated_data={"applications": input.all_application_names}
                 )
-                return JSONResponse(status_code=200)
+                return JSONResponse(status_code=200, content={"message": "Cache updated successfully"})
             except DatabaseError as e:
                 log.error("Database error: %s", str(e))
                 raise HTTPException(status_code=500, detail="Database error") from e

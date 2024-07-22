@@ -1,11 +1,11 @@
-from typing import Any
+from typing import Any, Optional
 from app.connectors.orm import Orm
 from app.models.stores.user import User, UserORM
 
 
 class UserService:
     
-    async def get(self, user_email: str) -> User:
+    async def get(self, user_email: str, fields: Optional[set[str]] = None) -> Any:
         orm = Orm(is_user_facing=False)
         result: list[User] = await orm.static_get(
         orm_model=UserORM, 
@@ -17,6 +17,13 @@ class UserService:
         if len(result) > 1:
             raise ValueError(f"Multiple users found for email {user_email}")
         user: User = result[0]
+        if fields:
+            user_dict: dict[str, Any] = user.model_dump()
+            result: dict[str, Any] = {}
+            for key, value in user_dict.items():
+                if key in fields:
+                    result[key] = value            
+            return result
         return user
     
     async def update(self, filters: dict[str, Any], updated_data: dict[str, Any]):

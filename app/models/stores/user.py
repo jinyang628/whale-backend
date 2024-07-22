@@ -1,8 +1,8 @@
-import json
 from typing import Any
 from app.models.stores.base import BaseObject
 from app.models.utils import sql_value_to_typed_value
-from sqlalchemy import JSON, UUID, Column, Integer, String, DateTime
+from sqlalchemy import JSON, Column, String, DateTime
+from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import declarative_base 
 from sqlalchemy.sql import func
 import logging
@@ -17,19 +17,19 @@ class UserORM(Base):
     
     id = Column(UUID(as_uuid=True), primary_key=True)
     email = Column(String, nullable=False)
-    applications = Column(JSON, nullable=True)
+    applications = Column(ARRAY(String), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, default=func.now(), onupdate=func.now())
     
 class User(BaseObject):
     email: str
-    applications: dict
+    applications: list[str]
 
     @classmethod
     def local(
         cls,
         email: str,
-        applications: dict[str, Any],
+        applications: list[str],
     ):
         return User(
             id=User.generate_id(),
@@ -44,5 +44,5 @@ class User(BaseObject):
     ):
         return cls(
             id=sql_value_to_typed_value(dict=kwargs, key="id", type=str),
-            applications=sql_value_to_typed_value(dict=kwargs, key="applications", type=dict),
+            applications=sql_value_to_typed_value(dict=kwargs, key="applications", type=list[str]),
         )

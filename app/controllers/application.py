@@ -58,7 +58,9 @@ class ApplicationController:
                     return HTTPException(
                         status_code=404, detail="Application not found"
                     )
-                await self.service.insert_cache(name=input.name, user_email=input.user_email)
+                await self.service.insert_cache(
+                    name=input.name, user_email=input.user_email
+                )
                 return JSONResponse(status_code=200, content=response.model_dump())
             except DatabaseError as e:
                 log.error("Database error: %s", str(e))
@@ -66,3 +68,7 @@ class ApplicationController:
             except Exception as e:
                 log.error("Unexpected error in application controller.py: %s", str(e))
                 raise HTTPException(status_code=500, detail=str(e)) from e
+
+        @router.post("/gpt")
+        async def gpt(gpt: PostApplicationRequest) -> JSONResponse:
+            print(gpt)

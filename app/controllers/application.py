@@ -70,5 +70,6 @@ class ApplicationController:
                 raise HTTPException(status_code=500, detail=str(e)) from e
 
         @router.post("/gpt")
-        async def gpt(gpt: PostApplicationRequest) -> JSONResponse:
+        async def gpt(gpt: PostApplicationRequest):
             print(gpt)
+            return

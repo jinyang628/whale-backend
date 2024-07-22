@@ -58,7 +58,7 @@ class ApplicationController:
                     return HTTPException(
                         status_code=404, detail="Application not found"
                     )
-                await self.service.cache(name=input.name, user_email=input.user_email)
+                await self.service.insert_cache(name=input.name, user_email=input.user_email)
                 return JSONResponse(status_code=200, content=response.model_dump())
             except DatabaseError as e:
                 log.error("Database error: %s", str(e))

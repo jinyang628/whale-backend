@@ -12,6 +12,7 @@ from app.models.application import (
     Table,
 )
 from app.models.stores.user import User, UserORM
+from app.services.user import UserService
 from app.stores.base.main import execute_client_script
 from app.stores.sqls.template import generate_foreign_key_script, generate_table_creation_script
 
@@ -86,19 +87,11 @@ class ApplicationService:
         )
         return SelectApplicationResponse(application=application_content)
     
-    async def cache(self, name: str, user_email: str):
+    # RETHINK THIS method because frontend should just pass the whole list instead of only the newly added only
+    async def insert_cache(self, name: str, user_email: str):
         """Caches the application which the user selected in the database."""
         orm = Orm(is_user_facing=False)
-        result: list[User] = await orm.static_get(
-            orm_model=UserORM, 
-            pydantic_model=User, 
-            filters={"boolean_clause": "AND", "conditions": [{"column": "email", "operator": "=", "value": user_email}]}
-        )
-        if len(result) < 1:
-            raise ValueError(f"User of email {user_email} not found.")
-        if len(result) > 1:
-            raise ValueError(f"Multiple users found for email {user_email}")
-        user: User = result[0]
+        user: User = await UserService().get(user_email=user_email)
         cached_applications: Optional[dict[str, list[str]]] = user.applications
         if not cached_applications:
             cached_applications = {"applications": [name]}

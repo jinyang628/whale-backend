@@ -136,7 +136,7 @@ class PostApplicationResponse(BaseModel):
         extra = "forbid"
         
 class SelectApplicationRequest(BaseModel):
-    user_email: str 
+    user_id: str 
     new_application_name: str
     all_application_names: list[str]
 

@@ -1,4 +1,6 @@
 from typing import Any
+
+from pydantic import BaseModel
 from app.models.stores.base import BaseObject
 from app.models.utils import sql_value_to_typed_value
 from sqlalchemy import JSON, Column, String, DateTime
@@ -15,24 +17,26 @@ Base = declarative_base()
 class UserORM(Base):
     __tablename__ = "user"
     
-    id = Column(UUID(as_uuid=True), primary_key=True)
+    id = Column(String, primary_key=True)
     email = Column(String, nullable=False)
-    applications = Column(ARRAY(String), nullable=True)
+    applications = Column(ARRAY(String), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, default=func.now(), onupdate=func.now())
     
-class User(BaseObject):
+class User(BaseModel):
+    id: str
     email: str
     applications: list[str]
 
     @classmethod
     def local(
         cls,
+        id: str,
         email: str,
         applications: list[str],
     ):
         return User(
-            id=User.generate_id(),
+            id=id,
             email=email,
             applications=applications,
         )
@@ -44,5 +48,6 @@ class User(BaseObject):
     ):
         return cls(
             id=sql_value_to_typed_value(dict=kwargs, key="id", type=str),
+            email=sql_value_to_typed_value(dict=kwargs, key="email", type=str),
             applications=sql_value_to_typed_value(dict=kwargs, key="applications", type=list[str]),
         )

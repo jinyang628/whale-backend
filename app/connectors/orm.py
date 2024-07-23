@@ -311,7 +311,6 @@ class Orm:
         """
         results = []
         offset = 0
-        
         async with self.sessionmaker() as session:
             while True:
                 query = select(orm_model)
@@ -331,8 +330,8 @@ class Orm:
         
         if not results:
             return []
-        
-        return [pydantic_model.model_validate(result) for result in results]
+        print(results)
+        return [pydantic_model.model_validate(result.__dict__) for result in results]
     
     async def static_post(
         self,

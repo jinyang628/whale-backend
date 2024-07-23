@@ -325,7 +325,7 @@ async def _execute_put_method(
     )
     
     message_content: str = ""
-    if not filter_dict:
+    if not filter_dict["conditions"]:
         message_content = f"All the {len(rows)} row(s) have been updated in the {target_table.name} table of {application_name}:"
     else:
         message_content = f"The following {len(rows)} row(s) have been updated in the {target_table.name} table of {application_name} by filtering {translate_filter_dict(filter_dict)}:"
@@ -372,7 +372,7 @@ async def _execute_delete_method(
     )
     
     message_content: str = ""
-    if not filter_dict:
+    if not filter_dict["conditions"]:
         message_content = f"All the {len(rows)} row(s) have been deleted from the {target_table.name} table of {http_method_response.application.name}:"
     else:
         message_content: str = f"The following {len(rows)} row(s) have been deleted from the {target_table.name} table of {http_method_response.application.name} by filtering {translate_filter_dict(filter_dict)}:"
@@ -418,7 +418,7 @@ async def _execute_get_method(
     
     
     message_content: str = ""
-    if not filter_dict:
+    if not filter_dict["conditions"]:
         message_content = f"All the {len(rows)} row(s) have been retrieved from the {target_table.name} table of {application_name}:"
     else:
         message_content = f"The following row(s) have been retrieved from the {target_table.name} table of {application_name} by filtering {translate_filter_dict(filter_dict)}:"

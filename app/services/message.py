@@ -324,7 +324,11 @@ async def _execute_put_method(
         date_column_names_to_process=date_column_names_to_process
     )
     
-    message_content: str = f"The following {len(rows)} row(s) have been updated in the {target_table.name} table of {application_name} by filtering {translate_filter_dict(filter_dict)}:"
+    message_content: str = ""
+    if not filter_dict:
+        message_content = f"All the {len(rows)} row(s) have been updated in the {target_table.name} table of {application_name}:"
+    else:
+        message_content = f"The following {len(rows)} row(s) have been updated in the {target_table.name} table of {application_name} by filtering {translate_filter_dict(filter_dict)}:"
     
     return message_content, rows, ReverseActionUpdate(
         reverse_filter_conditions=reverse_filters, 
@@ -367,7 +371,11 @@ async def _execute_delete_method(
         date_column_names_to_process=date_column_names_to_process
     )
     
-    message_content: str = f"The following {len(rows)} row(s) have been deleted from the {target_table.name} table of {http_method_response.application.name} by filtering {translate_filter_dict(filter_dict)}:"
+    message_content: str = ""
+    if not filter_dict:
+        message_content = f"All the {len(rows)} row(s) have been deleted from the {target_table.name} table of {http_method_response.application.name}:"
+    else:
+        message_content: str = f"The following {len(rows)} row(s) have been deleted from the {target_table.name} table of {http_method_response.application.name} by filtering {translate_filter_dict(filter_dict)}:"
     
     return message_content, rows, ReverseActionPost(
         deleted_data=rows, 
@@ -407,7 +415,12 @@ async def _execute_get_method(
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process
     )
-
-    message_content: str = f"The following row(s) have been retrieved from the {target_table.name} table of {application_name} by filtering {translate_filter_dict(filter_dict)}:"
+    
+    
+    message_content: str = ""
+    if not filter_dict:
+        message_content = f"All the {len(rows)} row(s) have been retrieved from the {target_table.name} table of {application_name}:"
+    else:
+        message_content = f"The following row(s) have been retrieved from the {target_table.name} table of {application_name} by filtering {translate_filter_dict(filter_dict)}:"
 
     return message_content, rows, ReverseActionGet()

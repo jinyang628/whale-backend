@@ -267,7 +267,8 @@ async def _execute_post_method(
     )
     log.info(f"Rows from POST request: {rows}")
 
-    message_content: str = f"The following row(s) has been inserted into the {target_table.name} table of {http_method_response.application.name}:\n{json.dumps(http_method_response.inserted_rows, indent=4)}\n"
+
+    message_content: str = f"The following row(s) has been inserted into the {target_table.name} table of {http_method_response.application.name}:"
     
     return message_content, rows, ReverseActionDelete(ids=ids, target_table=target_table, application_name=application_name)
 

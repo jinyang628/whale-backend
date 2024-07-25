@@ -67,6 +67,7 @@ class MessageService:
         chat_history.extend(response_message_lst)
         
         # TODO: Aaron needs to update USER table HERE with UserService UPDATE function, leaving updated_data NONE and increment_field set to WHATEVER_NAME_U_WANT
+        # TODO: Aaron needs to create a new table column in supabase for user table too. name it WHATEVER_NAME_U_WANT
         
         return PostMessageResponse(
             message_lst=response_message_lst,

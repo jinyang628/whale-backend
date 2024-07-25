@@ -90,7 +90,6 @@ class ApplicationService:
         )
         return SelectApplicationResponse(application=application_content)
     
-    # RETHINK THIS method because frontend should just pass the whole list instead of only the newly added only
     async def insert_cache(self, names: list[str], user_id: str):
         """Caches the application which the user selected in the database."""
         orm = Orm(is_user_facing=False)

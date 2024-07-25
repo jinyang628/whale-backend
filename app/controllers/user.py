@@ -27,11 +27,11 @@ class UserController:
         
         @router.patch("/cache/update")
         async def update_cache(input: UpdateCacheRequest) -> JSONResponse:
-            print(input)
             try:
                 await self.service.update(
                     filters={"boolean_clause": "AND", "conditions": [{"column": "id", "operator": "=", "value": input.user_id}]},
-                    updated_data={"applications": input.all_application_names}
+                    updated_data={"applications": input.all_application_names},
+                    increment_field=None
                 )
                 return JSONResponse(status_code=200, content={"message": "Cache updated successfully"})
             except DatabaseError as e:
@@ -48,6 +48,11 @@ class UserController:
                     user_id=user_id,
                     user_email=user_email,
                     fields={"applications"},
+                )
+                await self.service.update(
+                    filters={"boolean_clause": "AND", "conditions": [{"column": "id", "operator": "=", "value": user_id}]},
+                    updated_data=None,
+                    increment_field="visits"
                 )
                 applications: list[SelectApplicationResponse] = []
                 for name in application_names["applications"]:

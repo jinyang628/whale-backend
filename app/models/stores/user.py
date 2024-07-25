@@ -1,10 +1,7 @@
-from typing import Any
-
 from pydantic import BaseModel
-from app.models.stores.base import BaseObject
 from app.models.utils import sql_value_to_typed_value
-from sqlalchemy import JSON, Column, String, DateTime
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import declarative_base 
 from sqlalchemy.sql import func
 import logging
@@ -20,6 +17,7 @@ class UserORM(Base):
     id = Column(String, primary_key=True)
     email = Column(String, nullable=False)
     applications = Column(ARRAY(String), nullable=False)
+    visits = Column(Integer, nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, default=func.now())
     updated_at = Column(DateTime(timezone=True), nullable=False, default=func.now(), onupdate=func.now())
     
@@ -27,6 +25,7 @@ class User(BaseModel):
     id: str
     email: str
     applications: list[str]
+    visits: int
 
     @classmethod
     def local(
@@ -34,11 +33,13 @@ class User(BaseModel):
         id: str,
         email: str,
         applications: list[str],
+        visits: int,
     ):
         return User(
             id=id,
             email=email,
             applications=applications,
+            visits=visits
         )
 
     @classmethod
@@ -50,4 +51,5 @@ class User(BaseModel):
             id=sql_value_to_typed_value(dict=kwargs, key="id", type=str),
             email=sql_value_to_typed_value(dict=kwargs, key="email", type=str),
             applications=sql_value_to_typed_value(dict=kwargs, key="applications", type=list[str]),
+            visits=sql_value_to_typed_value(dict=kwargs, key="visits", type=int),
         )

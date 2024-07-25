@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel
-from sqlalchemy import BinaryExpression, or_, and_, select, delete, true, update
+from sqlalchemy import BinaryExpression, column, or_, and_, select, delete, true, update
 from asyncpg.pgproto.pgproto import UUID as AsyncpgUUID
 from sqlalchemy.orm import Session, sessionmaker, aliased
 from sqlalchemy.orm.decl_api import DeclarativeMeta
@@ -10,7 +10,7 @@ from dotenv import find_dotenv, load_dotenv
 import os
 
 import logging
-from typing import Any, Type
+from typing import Any, Optional, Type
 
 from app.models.stores.base import BaseObject
 
@@ -144,7 +144,6 @@ class Orm:
         model: Type[DeclarativeMeta], 
         filters: dict[str, Any], 
     ) -> list[dict[Any, dict]]:
-        print(filters)
         deleted_rows: list[dict[str, Any]] = []
 
         async with self.sessionmaker() as session:
@@ -359,7 +358,8 @@ class Orm:
         self,
         orm_model: Type[DeclarativeMeta],
         filters: dict[str, Any],
-        updated_data: dict[str, Any],
+        updated_data: Optional[dict[str, Any]],
+        increment_field: Optional[str]
     ):
         """Updates entries in the specified table based on the filters provided.
 
@@ -370,7 +370,12 @@ class Orm:
         """
         async with self.sessionmaker() as session:
             filter_expression, params = _build_filter(orm_model, filters)
-            update_stmt = update(orm_model).where(filter_expression).values(**updated_data)
+            
+            if increment_field:
+                update_stmt = update(orm_model).where(filter_expression).values({increment_field: column(increment_field) + 1})
+            else:
+                update_stmt = update(orm_model).where(filter_expression).values(**updated_data)
+        
             await session.execute(update_stmt, params)
             await session.commit()
             log.info(f"Updated rows in {orm_model.__tablename__}")

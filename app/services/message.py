@@ -115,7 +115,6 @@ async def _reverse_with_delete(
     table_orm_model: Type[DeclarativeMeta],
     ids: list[Any],
 ):
-    print(ids)
     ids_lst: list[Any] = []
     for id in ids:
         # Convert the string uuid back to UUID object (It had to be a string because UUID is not JSON serialisable as an API request object)
@@ -127,10 +126,13 @@ async def _reverse_with_delete(
         else:
             raise TypeError("Invalid type for id in reverse action")
 
+    conditions = [{"column": "id", "operator": "=", "value": id} for id in ids_lst]
     await orm.delete_inference_result(
         model=table_orm_model, 
-        filters={"id": ids_lst[0]}, ## TODO: Fix this problematic temp fix to allow reverse of multiple entries
-        is_and=False
+        filters={
+            "boolean_clause": "OR",
+            "conditions" : conditions
+        },
     )
     
 async def _reverse_with_post(

@@ -144,6 +144,7 @@ class Orm:
         model: Type[DeclarativeMeta], 
         filters: dict[str, Any], 
     ) -> list[dict[Any, dict]]:
+        print(filters)
         deleted_rows: list[dict[str, Any]] = []
 
         async with self.sessionmaker() as session:
@@ -330,7 +331,6 @@ class Orm:
         
         if not results:
             return []
-        print(results)
         return [pydantic_model.model_validate(result.__dict__) for result in results]
     
     async def static_post(

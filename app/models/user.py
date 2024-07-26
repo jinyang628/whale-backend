@@ -6,6 +6,7 @@ from app.models.application import SelectApplicationResponse
 class UpdateCacheRequest(BaseModel):
     user_id: str
     all_application_names: list[str]
-    
+
+
 class GetCacheResponse(BaseModel):
     applications: list[SelectApplicationResponse]

@@ -29,15 +29,19 @@ def get_application_controller_router():
     service = ApplicationService()
     return ApplicationController(service=service).router
 
+
 def get_message_controller_router():
     service = MessageService()
     return MessageController(service=service).router
+
 
 def get_user_controller_router():
     service = UserService()
     return UserController(service=service).router
 
 
-app.include_router(get_application_controller_router(), tags=["application"], prefix="/application")
+app.include_router(
+    get_application_controller_router(), tags=["application"], prefix="/application"
+)
 app.include_router(get_message_controller_router(), tags=["message"], prefix="/message")
 app.include_router(get_user_controller_router(), tags=["user"], prefix="/user")

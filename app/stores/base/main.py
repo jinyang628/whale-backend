@@ -8,9 +8,8 @@ logging.basicConfig(level=logging.INFO)
 
 EXTERNAL_DATABASE_URL = os.environ.get("EXTERNAL_DATABASE_URL")
 
-async def execute_client_script(
-    table_name: str, sql_script: str
-):
+
+async def execute_client_script(table_name: str, sql_script: str):
     sql_statements = sql_script.split("##")
 
     engine = create_async_engine(EXTERNAL_DATABASE_URL)

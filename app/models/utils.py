@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float
 from sqlalchemy.orm import declarative_base
 
+
 def sql_value_to_typed_value(
     dict: dict,
     key: str,
@@ -38,5 +39,3 @@ def generate_identifier(value: str) -> str:
     timestamp = now.strftime("%Y%m%d%H%M%S")
     unique_identifier = f"{value}_{timestamp}"
     return unique_identifier
-
-    

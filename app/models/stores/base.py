@@ -1,9 +1,10 @@
 from pydantic import BaseModel
 import uuid
 
+
 class BaseObject(BaseModel):
     id: uuid.UUID = None
-    
+
     class Config:
         orm_mode = True
         from_attributes = True

@@ -97,7 +97,6 @@ class MessageService:
         reverse_stack.extend(response_reverse_action_lst)
         chat_history.append(user_message)
         chat_history.extend(response_message_lst)
-        print(4)
 
         # TODO: Aaron to update USER table with UserService UPDATE function, leaving updated_data NONE and increment_field set to total_calls
 
@@ -110,7 +109,6 @@ class MessageService:
             increment_field="total_calls",
         )
 
-        print(5)
         return PostMessageResponse(
             message_lst=response_message_lst,
             chat_history=chat_history,

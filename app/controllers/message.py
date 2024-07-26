@@ -30,52 +30,55 @@ class MessageController:
         @router.post("/send")
         async def post(input: PostMessageRequest) -> JSONResponse:
             try:
-                application_content_lst: list[ApplicationContent] = await self.service.get_application_content_lst(
-                    application_names=input.application_names 
+                application_content_lst: list[ApplicationContent] = (
+                    await self.service.get_application_content_lst(
+                        application_names=input.application_names
+                    )
                 )
                 log.info(f"Application content list: {application_content_lst}")
                 inference_response: InferenceResponse = infer(
                     input=InferenceRequest(
                         applications=application_content_lst,
                         message=input.message,
-                        chat_history=input.chat_history
+                        chat_history=input.chat_history,
                     )
                 )
                 log.info(f"Inference response: {inference_response}")
-                result: PostMessageResponse = await self.service.execute_inference_response(
-                    user_message=Message(
-                        role=Role.USER,
-                        content=input.message
-                    ),
-                    chat_history=input.chat_history,
-                    reverse_stack=input.reverse_stack,
-                    inference_response=inference_response
+                result: PostMessageResponse = (
+                    await self.service.execute_inference_response(
+                        user_message=Message(role=Role.USER, content=input.message),
+                        chat_history=input.chat_history,
+                        reverse_stack=input.reverse_stack,
+                        inference_response=inference_response,
+                        user_id=input.user_id,
+                    )
                 )
                 log.info(f"Returning result to frontend: {result.model_dump()}")
-                return JSONResponse(
-                    status_code=200, content=result.model_dump()
-                )
+                return JSONResponse(status_code=200, content=result.model_dump())
             except ValidationError as e:
                 log.error("Validation error: %s", str(e))
                 raise HTTPException(status_code=422, detail="Validation error") from e
             except requests.RequestException as e:
                 log.error(f"Failed to infer response from server: {e}")
-                raise HTTPException(status_code=422, detail="Inference error occurred") from e                        
+                raise HTTPException(
+                    status_code=422, detail="Inference error occurred"
+                ) from e
             except Exception as e:
                 log.error("Unexpected error in message controller.py: %s", str(e))
-                raise HTTPException(status_code=500, detail="An unexpected error occurred") from e  
-            
+                raise HTTPException(
+                    status_code=500, detail="An unexpected error occurred"
+                ) from e
+
         @router.post("/reverse")
         async def reverse(input: ReverseActionWrapper) -> JSONResponse:
             try:
                 await self.service.reverse_inference_response(input=input)
-                return JSONResponse(
-                    status_code=200, content={"message": "Success"}
-                )
+                return JSONResponse(status_code=200, content={"message": "Success"})
             except ValidationError as e:
                 log.error("Validation error: %s", str(e))
                 return HTTPException(status_code=422, detail=str(e))
             except Exception as e:
                 log.error("Unexpected error in message controller.py: %s", str(e))
-                raise HTTPException(status_code=500, detail="An unexpected error occurred") from e
-    
+                raise HTTPException(
+                    status_code=500, detail="An unexpected error occurred"
+                ) from e

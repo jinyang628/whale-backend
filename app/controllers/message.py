@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app.api.inference.use import infer_use
+from app.api.inference.create import infer_create
 from app.models.inference.create import CreateInferenceRequest, CreateInferenceResponse
 from app.models.inference.use import ApplicationContent, UseInferenceRequest, UseInferenceResponse
 from app.models.message.create import CreateRequest
@@ -76,7 +77,7 @@ class MessageController:
         async def create(input: CreateRequest) -> JSONResponse:
             try:
                 print(input)
-                inference_response: CreateInferenceResponse = infer_use(
+                inference_response: CreateInferenceResponse = infer_create(
                     input=CreateInferenceRequest(
                         message=input.message,
                         chat_history=input.chat_history,

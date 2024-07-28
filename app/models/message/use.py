@@ -1,19 +1,8 @@
-from enum import StrEnum
-from typing import Any, Optional
+from typing import Optional
 from pydantic import BaseModel
 
-from app.models.reverse import ReverseActionWrapper
-
-
-class Role(StrEnum):
-    USER = "user"
-    ASSISTANT = "assistant"
-
-
-class Message(BaseModel):
-    role: Role
-    content: str
-    blocks: Optional[list[dict[str, Any]]] = None
+from app.models.message.shared import Message
+from app.models.message.reverse import ReverseActionWrapper
 
 
 class UseRequest(BaseModel):

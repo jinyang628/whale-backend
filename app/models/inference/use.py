@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from enum import StrEnum
 from app.models.application import ApplicationContent
 
-from app.models.message import Message
+from app.models.message.shared import Message
 
 
 class HttpMethod(StrEnum):
@@ -13,7 +13,7 @@ class HttpMethod(StrEnum):
     DELETE = "DELETE"
 
 
-class InferenceRequest(BaseModel):
+class UseInferenceRequest(BaseModel):
     applications: list[ApplicationContent]
     message: str
     chat_history: list[Message]
@@ -28,6 +28,6 @@ class HttpMethodResponse(BaseModel):
     updated_data: Optional[dict[str, Any]] = None
 
 
-class InferenceResponse(BaseModel):
+class UseInferenceResponse(BaseModel):
     response: list[HttpMethodResponse]
     clarification: Optional[str] = None

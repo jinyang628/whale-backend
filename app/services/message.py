@@ -6,16 +6,17 @@ from sqlalchemy.orm.decl_api import DeclarativeMeta
 import uuid
 from app.connectors.orm import Orm
 from app.models.application import Table
-from app.models.inference import (
+from app.models.inference.use import (
     ApplicationContent,
     HttpMethod,
     HttpMethodResponse,
-    InferenceResponse,
+    UseInferenceResponse,
 )
-from app.models.message import Message, UseResponse, Role
+from app.models.message.use import UseResponse
+from app.models.message.shared import Message, Role
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.dynamic import create_dynamic_orm
-from app.models.reverse import (
+from app.models.message.reverse import (
     ReverseActionClarification,
     ReverseActionDelete,
     ReverseActionGet,
@@ -74,7 +75,7 @@ class MessageService:
         user_message: Message,
         chat_history: list[Message],
         reverse_stack: list[ReverseActionWrapper],
-        inference_response: InferenceResponse,
+        inference_response: UseInferenceResponse,
         user_id: str,
     ) -> UseResponse:
         if inference_response.clarification:
@@ -204,7 +205,7 @@ async def _reverse_with_put(
 ### INFERENCE SECTION
 ###
 async def _execute(
-    inference_response: InferenceResponse,
+    inference_response: UseInferenceResponse,
 ) -> tuple[list[Message], list[ReverseActionWrapper]]:
     orm = Orm(is_user_facing=True)
     response_message_content_lst: list[Message] = []

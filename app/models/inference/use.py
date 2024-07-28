@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from enum import StrEnum
 from app.models.application import ApplicationContent
 
-from app.models.message.shared import Message
+from app.models.message.use import UseMessage
 
 
 class HttpMethod(StrEnum):
@@ -16,7 +16,7 @@ class HttpMethod(StrEnum):
 class UseInferenceRequest(BaseModel):
     applications: list[ApplicationContent]
     message: str
-    chat_history: list[Message]
+    chat_history: list[UseMessage]
 
 
 class HttpMethodResponse(BaseModel):

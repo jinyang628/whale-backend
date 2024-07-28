@@ -1,13 +1,14 @@
 from typing import Optional
 from pydantic import BaseModel
 from app.models.application import ApplicationContent
-
-from app.models.message.shared import Message
+from app.models.message.create import CreateMessage
 
 class CreateInferenceRequest(BaseModel):
     message: str
-    chat_history: list[Message]
+    chat_history: list[CreateMessage]
 
 class CreateInferenceResponse(BaseModel):
-    nessage: str
-    application: Optional[ApplicationContent]
+    application_content: Optional[ApplicationContent] = None
+    overview: Optional[str] = None
+    clarification: Optional[str] = None
+

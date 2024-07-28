@@ -9,8 +9,8 @@ from app.api.inference.use import infer_use
 from app.api.inference.create import infer_create
 from app.models.inference.create import CreateInferenceRequest, CreateInferenceResponse
 from app.models.inference.use import ApplicationContent, UseInferenceRequest, UseInferenceResponse
-from app.models.message.create import CreateRequest
-from app.models.message.use import UseRequest, UseResponse
+from app.models.message.create import CreateMessage, CreateRequest, CreateResponse
+from app.models.message.use import UseMessage, UseRequest, UseResponse
 from app.models.message.shared import Message, Role
 from app.models.message.reverse import ReverseActionWrapper
 from app.services.message import MessageService
@@ -50,7 +50,7 @@ class MessageController:
                 log.info(f"Inference response: {inference_response}")
                 result: UseResponse = (
                     await self.service.execute_inference_response(
-                        user_message=Message(role=Role.USER, content=input.message),
+                        user_message=UseMessage(role=Role.USER, content=input.message),
                         chat_history=input.chat_history,
                         reverse_stack=input.reverse_stack,
                         inference_response=inference_response,
@@ -76,15 +76,21 @@ class MessageController:
         @router.post("/create")
         async def create(input: CreateRequest) -> JSONResponse:
             try:
-                print(input)
                 inference_response: CreateInferenceResponse = infer_create(
                     input=CreateInferenceRequest(
                         message=input.message,
                         chat_history=input.chat_history,
                     )
                 )
-                log.info(f"Returning result to frontend: {inference_response.model_dump()}")
-                return JSONResponse(status_code=200, content=inference_response.model_dump())
+                result: CreateResponse = self.service.construct_create_response(
+                    user_message=CreateMessage(role=Role.USER, content=input.message),
+                    chat_history=input.chat_history,
+                    overview=inference_response.overview,
+                    clarification=inference_response.clarification,
+                    application_content=inference_response.application_content,
+                )
+                log.info(f"Returning result to frontend: {result.model_dump()}")
+                return JSONResponse(status_code=200, content=result.model_dump())
             except ValidationError as e:
                 log.error("Validation error: %s", str(e))
                 raise HTTPException(status_code=422, detail="Validation error") from e

@@ -1,13 +1,12 @@
 from enum import StrEnum
-from typing import Any, Optional
 from pydantic import BaseModel
+from abc import ABC
 
 class Role(StrEnum):
     USER = "user"
     ASSISTANT = "assistant"
 
 
-class Message(BaseModel):
+class Message(BaseModel, ABC):
     role: Role
     content: str
-    blocks: Optional[list[dict[str, Any]]] = None

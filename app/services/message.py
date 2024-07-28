@@ -12,8 +12,9 @@ from app.models.inference.use import (
     HttpMethodResponse,
     UseInferenceResponse,
 )
-from app.models.message.use import UseResponse
-from app.models.message.shared import Message, Role
+from app.models.message.create import CreateMessage, CreateResponse
+from app.models.message.use import UseMessage, UseResponse
+from app.models.message.shared import Role
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.dynamic import create_dynamic_orm
 from app.models.message.reverse import (
@@ -72,15 +73,15 @@ class MessageService:
 
     async def execute_inference_response(
         self,
-        user_message: Message,
-        chat_history: list[Message],
+        user_message: UseMessage,
+        chat_history: list[UseMessage],
         reverse_stack: list[ReverseActionWrapper],
         inference_response: UseInferenceResponse,
         user_id: str,
     ) -> UseResponse:
         if inference_response.clarification:
             response_message_lst = [
-                Message(role=Role.ASSISTANT, content=inference_response.clarification)
+                UseMessage(role=Role.ASSISTANT, content=inference_response.clarification)
             ]
             chat_history.append(user_message)
             chat_history.extend(response_message_lst)
@@ -150,6 +151,29 @@ class MessageService:
                 raise TypeError(
                     "Invalid action type when trying to reverse inferenec response"
                 )
+                
+    def construct_create_response(
+        self,
+        user_message: CreateMessage,
+        chat_history: list[CreateMessage],
+        overview: Optional[str],
+        clarification: Optional[str],
+        application_content: list[ApplicationContent],
+    ) -> CreateResponse:
+        message_content: str = f"{overview}\n{clarification}"
+        assistant_message = CreateMessage(
+            role=Role.ASSISTANT, 
+            content=message_content, 
+            application_content=application_content
+        )
+        chat_history.append(user_message)
+        chat_history.append(assistant_message)
+        return CreateResponse(
+            message=assistant_message,
+            chat_history=chat_history,
+            application_content=application_content,
+        )
+        
 
 
 ###
@@ -206,9 +230,9 @@ async def _reverse_with_put(
 ###
 async def _execute(
     inference_response: UseInferenceResponse,
-) -> tuple[list[Message], list[ReverseActionWrapper]]:
+) -> tuple[list[UseMessage], list[ReverseActionWrapper]]:
     orm = Orm(is_user_facing=True)
-    response_message_content_lst: list[Message] = []
+    response_message_content_lst: list[UseMessage] = []
     response_reverse_action_lst: list[ReverseActionWrapper] = []
     for http_method_response in inference_response.response:
         target_table: Optional[Table] = None
@@ -266,7 +290,7 @@ async def _execute(
                 raise ValueError(
                     f"Unsupported HTTP method: {http_method_response.http_method}"
                 )
-        message = Message(role=Role.ASSISTANT, content=content, blocks=rows)
+        message = UseMessage(role=Role.ASSISTANT, content=content, rows=rows)
         response_message_content_lst.append(message)
         response_reverse_action_lst.append(ReverseActionWrapper(action=reverse_action))
     log.info(response_message_content_lst)

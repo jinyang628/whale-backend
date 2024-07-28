@@ -1,12 +1,17 @@
+from typing import Optional
 from pydantic import BaseModel
+from app.models.application import ApplicationContent
 
 from app.models.message.shared import Message
 
-
+class CreateMessage(Message):
+    application_content: Optional[ApplicationContent] = None
+    
 class CreateRequest(BaseModel):
     message: str
-    chat_history: list[Message]
+    chat_history: list[CreateMessage]
 
 class CreateResponse(BaseModel):
-    message: Message
-    chat_history: list[Message]
+    message: CreateMessage
+    chat_history: list[CreateMessage]
+    

@@ -13,10 +13,10 @@ class Role(StrEnum):
 class Message(BaseModel):
     role: Role
     content: str
-    rows: Optional[list[dict[str, Any]]] = None
+    blocks: Optional[list[dict[str, Any]]] = None
 
 
-class PostMessageRequest(BaseModel):
+class UseRequest(BaseModel):
     message: str
     chat_history: list[Message]
     reverse_stack: list[ReverseActionWrapper]
@@ -24,7 +24,7 @@ class PostMessageRequest(BaseModel):
     user_id: str
 
 
-class PostMessageResponse(BaseModel):
+class UseResponse(BaseModel):
     message_lst: list[Message]
     chat_history: list[Message]
     reverse_stack: list[ReverseActionWrapper]

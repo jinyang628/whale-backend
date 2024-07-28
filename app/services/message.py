@@ -12,7 +12,7 @@ from app.models.inference import (
     HttpMethodResponse,
     InferenceResponse,
 )
-from app.models.message import Message, PostMessageResponse, Role
+from app.models.message import Message, UseResponse, Role
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.dynamic import create_dynamic_orm
 from app.models.reverse import (
@@ -76,7 +76,7 @@ class MessageService:
         reverse_stack: list[ReverseActionWrapper],
         inference_response: InferenceResponse,
         user_id: str,
-    ) -> PostMessageResponse:
+    ) -> UseResponse:
         if inference_response.clarification:
             response_message_lst = [
                 Message(role=Role.ASSISTANT, content=inference_response.clarification)
@@ -86,7 +86,7 @@ class MessageService:
             reverse_stack.append(
                 ReverseActionWrapper(action=ReverseActionClarification())
             )
-            return PostMessageResponse(
+            return UseResponse(
                 message_lst=response_message_lst,
                 chat_history=chat_history,
                 reverse_stack=reverse_stack,
@@ -109,7 +109,7 @@ class MessageService:
             increment_field="total_calls",
         )
 
-        return PostMessageResponse(
+        return UseResponse(
             message_lst=response_message_lst,
             chat_history=chat_history,
             reverse_stack=reverse_stack,
@@ -265,7 +265,7 @@ async def _execute(
                 raise ValueError(
                     f"Unsupported HTTP method: {http_method_response.http_method}"
                 )
-        message = Message(role=Role.ASSISTANT, content=content, rows=rows)
+        message = Message(role=Role.ASSISTANT, content=content, blocks=rows)
         response_message_content_lst.append(message)
         response_reverse_action_lst.append(ReverseActionWrapper(action=reverse_action))
     log.info(response_message_content_lst)

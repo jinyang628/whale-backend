@@ -11,7 +11,7 @@ from app.models.inference.create import CreateInferenceRequest, CreateInferenceR
 from app.models.inference.use import ApplicationContent, UseInferenceRequest, UseInferenceResponse
 from app.models.message.create import CreateMessage, CreateRequest, CreateResponse
 from app.models.message.use import UseMessage, UseRequest, UseResponse
-from app.models.message.shared import Message, Role
+from app.models.message.shared import Role
 from app.models.message.reverse import ReverseActionWrapper
 from app.services.message import MessageService
 

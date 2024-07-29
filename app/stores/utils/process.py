@@ -102,7 +102,7 @@ def process_datetime_or_date_values_of_filter_dict(
     datetime_column_names_to_process: list[str],
     date_column_names_to_process: list[str],
 ) -> dict[str, Any]:
-
+    
     def process_conditions_helper(
         conditions: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:

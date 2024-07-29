@@ -337,6 +337,12 @@ async def _execute_post_method(
     log.info("Initiating POST request")
     ids, rows = await orm.post(model=table_orm_model, data=rows_to_insert)
     log.info(f"Rows from POST request: {rows}")
+    
+    rows = process_client_facing_rows(
+        db_rows=rows,
+        datetime_column_names_to_process=datetime_column_names_to_process,
+        date_column_names_to_process=date_column_names_to_process,
+    )
 
     message_content: str = (
         f"The following row(s) has been inserted into the {target_table.name} table of {http_method_response.application.name}:"
@@ -446,7 +452,7 @@ async def _execute_delete_method(
     log.info("Initiating DELETE request")
     rows: list[dict[str, Any]] = await orm.delete_inference_result(
         model=table_orm_model,
-        filters=filter_dict,
+        filters=copied_filter_dict,
     )
     log.info(f"Rows from DELETE request: {rows}")
 

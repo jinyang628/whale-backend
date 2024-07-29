@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from app.exceptions.exception import DatabaseError
 from app.models.application import (
+    ApplicationContent,
     PostApplicationRequest,
     PostApplicationResponse,
     SelectApplicationRequest,
@@ -31,10 +32,10 @@ class ApplicationController:
         router = self.router
 
         @router.post("/build")
-        async def build(input: PostApplicationRequest) -> JSONResponse:
+        async def build(input: ApplicationContent) -> JSONResponse:
             try:
-                response: PostApplicationResponse = await self.service.build(input=input)
-                await self.service.generate_client_application(input=input)
+                response: PostApplicationResponse = await self.service.build(application_content=input)
+                await self.service.generate_client_application(application_content=input)
                 return JSONResponse(status_code=200, content=response.model_dump())
             except ValidationError as e:
                 log.error("Validation error in application controller: %s", str(e))

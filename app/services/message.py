@@ -25,6 +25,7 @@ from app.models.message.reverse import (
     ReverseActionWrapper,
     ReverseActionUpdate,
 )
+from app.services.application import ApplicationService
 from app.stores.utils.frontend_message import translate_filter_dict
 from app.stores.utils.process import (
     identify_columns_to_process,
@@ -44,6 +45,7 @@ log = logging.getLogger(__name__)
 class MessageService:
     def __init__(self):
         self.user_service = UserService()
+        self.application_service = ApplicationService()
 
     async def get_application_content_lst(
         self, application_names: list[str]
@@ -152,15 +154,26 @@ class MessageService:
                     "Invalid action type when trying to reverse inferenec response"
                 )
                 
-    def construct_create_response(
+    async def construct_create_response(
         self,
         user_message: CreateMessage,
         chat_history: list[CreateMessage],
         overview: Optional[str],
         clarification: Optional[str],
+        concluding_message: Optional[str],
         application_content: list[ApplicationContent],
     ) -> CreateResponse:
-        message_content: str = f"{overview}\n{clarification}"
+        is_finished = False
+        message_content: str = ""
+        if concluding_message:
+            message_content = concluding_message
+            await self.application_service.build(application_content=application_content)
+            await self.application_service.generate_client_application(application_content=application_content)
+            is_finished = True
+        elif overview:
+            message_content = f"{overview}\n{clarification}" if clarification else overview
+        else:
+            message_content = clarification
         assistant_message = CreateMessage(
             role=Role.ASSISTANT, 
             content=message_content, 
@@ -172,6 +185,7 @@ class MessageService:
             message=assistant_message,
             chat_history=chat_history,
             application_content=application_content,
+            is_finished=is_finished,
         )
         
 

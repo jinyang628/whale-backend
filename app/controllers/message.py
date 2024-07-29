@@ -81,12 +81,13 @@ class MessageController:
                         message=input.message,
                         chat_history=input.chat_history,
                     )
-                )
-                result: CreateResponse = self.service.construct_create_response(
+                )                    
+                result: CreateResponse = await self.service.construct_create_response(
                     user_message=CreateMessage(role=Role.USER, content=input.message),
                     chat_history=input.chat_history,
                     overview=inference_response.overview,
                     clarification=inference_response.clarification,
+                    concluding_message=inference_response.concluding_message,
                     application_content=inference_response.application_content,
                 )
                 log.info(f"Returning result to frontend: {result.model_dump()}")

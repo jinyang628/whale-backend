@@ -23,22 +23,22 @@ log = logging.getLogger(__name__)
 
 class ApplicationService:
 
-    async def build(self, input: PostApplicationRequest) -> PostApplicationResponse:
+    async def build(self, application_content: ApplicationContent) -> PostApplicationResponse:
         """Inserts the entry into the application table."""
-        tables_dump: list[dict] = [table.model_dump() for table in input.tables]
-        application = Application.local(name=input.name, tables=tables_dump)
+        tables_dump: list[dict] = [table.model_dump() for table in application_content.tables]
+        application = Application.local(name=application_content.name, tables=tables_dump)
         orm = Orm(is_user_facing=False)
         await orm.post(model=ApplicationORM, data=[application.model_dump()])
         return PostApplicationResponse(name=application.name)
 
     async def generate_client_application(
-        self, input: PostApplicationRequest
+        self, application_content: ApplicationContent
     ) -> PostApplicationResponse:
         """Generates the client application."""
         # Step 1: Create tables
-        for table in input.tables:
+        for table in application_content.tables:
             # Prefix application name so that the table name remains unique amidst other client applications. Client application name is enforced to be unique
-            application_name: str = input.name
+            application_name: str = application_content.name
             table_name = f"{application_name}_{table.name}"
 
             # For input of inference, we will GET table description from the internal database, and the table name and columns from the client database
@@ -56,10 +56,10 @@ class ApplicationService:
             )
 
         # Step 2: Add foreign key constraints
-        for table in input.tables:
-            table_name = f"{input.name}_{table.name}"
+        for table in application_content.tables:
+            table_name = f"{application_content.name}_{table.name}"
             foreign_key_script = generate_foreign_key_script(
-                input_name=input.name, table_name=table_name, columns=table.columns
+                input_name=application_content.name, table_name=table_name, columns=table.columns
             )
             if not foreign_key_script:
                 continue

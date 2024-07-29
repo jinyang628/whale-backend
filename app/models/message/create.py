@@ -14,4 +14,5 @@ class CreateRequest(BaseModel):
 class CreateResponse(BaseModel):
     message: CreateMessage
     chat_history: list[CreateMessage]
+    is_finished: bool
     

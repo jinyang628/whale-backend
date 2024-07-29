@@ -11,4 +11,6 @@ class CreateInferenceResponse(BaseModel):
     application_content: Optional[ApplicationContent] = None
     overview: Optional[str] = None
     clarification: Optional[str] = None
+    concluding_message: Optional[str] = None
+
 

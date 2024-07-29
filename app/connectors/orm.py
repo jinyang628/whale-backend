@@ -352,7 +352,6 @@ class Orm:
             list[BaseObject]: A list of BaseObject that were inserted.
         """
         orm_instances = [orm_model(**item) for item in data]
-
         async with self.sessionmaker() as session:
             session.add_all(orm_instances)
             await session.flush()

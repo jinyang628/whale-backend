@@ -2,9 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.controllers.application import ApplicationController
+from app.controllers.feeedback import FeedbackController
 from app.controllers.message import MessageController
 from app.controllers.user import UserController
 from app.services.application import ApplicationService
+from app.services.feedback import FeedbackService
 from app.services.message import MessageService
 import logging
 
@@ -39,9 +41,13 @@ def get_user_controller_router():
     service = UserService()
     return UserController(service=service).router
 
+def get_feedback_controller_router():
+    service = FeedbackService()
+    return FeedbackController(service=service).router
 
 app.include_router(
     get_application_controller_router(), tags=["application"], prefix="/application"
 )
 app.include_router(get_message_controller_router(), tags=["message"], prefix="/message")
 app.include_router(get_user_controller_router(), tags=["user"], prefix="/user")
+app.include_router(get_feedback_controller_router(), tags=["feedback"], prefix="/feedback")

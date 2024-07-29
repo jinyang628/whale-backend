@@ -31,10 +31,9 @@ class ApplicationController:
         router = self.router
 
         @router.post("/build")
-        async def post(input: PostApplicationRequest) -> JSONResponse:
-            print("HELP ME")
+        async def build(input: PostApplicationRequest) -> JSONResponse:
             try:
-                response: PostApplicationResponse = await self.service.post(input=input)
+                response: PostApplicationResponse = await self.service.build(input=input)
                 await self.service.generate_client_application(input=input)
                 return JSONResponse(status_code=200, content=response.model_dump())
             except ValidationError as e:

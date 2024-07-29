@@ -11,8 +11,7 @@ from app.models.application import (
     SelectApplicationResponse,
     Table,
 )
-from app.models.stores.user import User, UserORM
-from app.services.user import UserService
+from app.models.stores.user import UserORM
 from app.stores.base.main import execute_client_script
 from app.stores.sqls.template import (
     generate_foreign_key_script,
@@ -24,7 +23,7 @@ log = logging.getLogger(__name__)
 
 class ApplicationService:
 
-    async def post(self, input: PostApplicationRequest) -> PostApplicationResponse:
+    async def build(self, input: PostApplicationRequest) -> PostApplicationResponse:
         """Inserts the entry into the application table."""
         tables_dump: list[dict] = [table.model_dump() for table in input.tables]
         application = Application.local(name=input.name, tables=tables_dump)

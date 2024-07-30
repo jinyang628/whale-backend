@@ -85,12 +85,12 @@ def process_datetime_values_of_row(
 
     for row in rows:
         for column_name in datetime_column_names_to_process:
-            if not row[column_name]:
+            if not row.get(column_name):
                 continue
             row[column_name] = parser.parse(row[column_name])
 
         for column_name in date_column_names_to_process:
-            if not row[column_name]:
+            if not row.get(column_name):
                 continue
             row[column_name] = parser.parse(row[column_name]).date()
         modified_rows.append(row)

@@ -16,7 +16,7 @@ from app.models.application.select import (
 from app.models.application.build import (
     PostApplicationResponse
 )
-from app.models.application.validate import ValidateRequest, ValidateResponse
+from app.models.application.validate import ValidateResponse
 from app.services.application import ApplicationService
 
 log = logging.getLogger(__name__)

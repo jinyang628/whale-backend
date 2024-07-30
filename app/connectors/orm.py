@@ -73,8 +73,6 @@ class Orm:
             for row in result:
                 row_dict = {}
                 for column, value in zip(columns, row):
-                    if isinstance(value, datetime):
-                        value = value.isoformat()
                     if isinstance(value, AsyncpgUUID):
                         value = str(value)
                     row_dict[column] = value
@@ -135,8 +133,6 @@ class Orm:
         for row in result:
             row_dict = {}
             for column, value in zip(columns, row):
-                if isinstance(value, datetime):
-                    value = value.isoformat()
                 if isinstance(value, AsyncpgUUID):
                     value = str(value)
                 row_dict[column] = value
@@ -181,8 +177,6 @@ class Orm:
             for row in result:
                 row_dict = {}
                 for column, value in zip(columns, row):
-                    if isinstance(value, datetime):
-                        value = value.isoformat()
                     if isinstance(value, AsyncpgUUID):
                         value = str(value)
                     row_dict[column] = value
@@ -250,8 +244,6 @@ class Orm:
             for row in result:
                 row_dict = {}
                 for column, value in zip(columns, row):
-                    if isinstance(value, datetime):
-                        value = value.isoformat()
                     if isinstance(value, AsyncpgUUID):
                         value = str(value)
                     row_dict[column] = value

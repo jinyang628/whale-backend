@@ -72,6 +72,7 @@ def identify_columns_to_process(table: Table):
         if column.data_type == DataType.DATE:
             date_column_names_to_process.append(column.name)
 
+    datetime_column_names_to_process.extend(["created_at", "updated_at"])
     return datetime_column_names_to_process, date_column_names_to_process
 
 

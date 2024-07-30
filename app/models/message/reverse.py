@@ -1,7 +1,7 @@
 from typing import Any, Literal
 from pydantic import BaseModel, Field
 
-from app.models.application import Table
+from app.models.application.base import Table
 
 
 class ReverseAction(BaseModel):

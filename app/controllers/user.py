@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
 from app.exceptions.exception import DatabaseError
-from app.models.application import SelectApplicationResponse
+from app.models.application.select import SelectApplicationResponse
 from app.models.user import GetCacheResponse, UpdateCacheRequest
 from app.services.application import ApplicationService
 from app.services.user import UserService

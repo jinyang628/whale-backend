@@ -135,27 +135,3 @@ class ApplicationContent(BaseModel):
 
     class Config:
         extra = "forbid"
-
-
-class PostApplicationRequest(ApplicationContent):
-    pass
-
-
-class PostApplicationResponse(BaseModel):
-    name: str
-
-    class Config:
-        extra = "forbid"
-
-
-class SelectApplicationRequest(BaseModel):
-    user_id: str
-    new_application_name: str
-    all_application_names: list[str]
-
-
-class SelectApplicationResponse(BaseModel):
-    application: ApplicationContent
-
-    class Config:
-        extra = "forbid"

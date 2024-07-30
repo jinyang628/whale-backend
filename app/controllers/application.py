@@ -6,13 +6,17 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app.exceptions.exception import DatabaseError
-from app.models.application import (
-    ApplicationContent,
-    PostApplicationRequest,
-    PostApplicationResponse,
-    SelectApplicationRequest,
-    SelectApplicationResponse,
+from app.models.application.base import (
+    ApplicationContent
 )
+from app.models.application.select import (
+    SelectApplicationRequest,
+    SelectApplicationResponse
+)
+from app.models.application.build import (
+    PostApplicationResponse
+)
+from app.models.application.validate import ValidateRequest, ValidateResponse
 from app.services.application import ApplicationService
 
 log = logging.getLogger(__name__)
@@ -48,6 +52,26 @@ class ApplicationController:
                 raise HTTPException(
                     status_code=500, detail="An unexpected error occurred"
                 ) from e
+        
+        @router.get("/validate")
+        async def validate(name: str) -> JSONResponse:
+            try:
+                response: Optional[SelectApplicationResponse] = await self.service.select(name=name)
+                if not response:
+                    return JSONResponse(status_code=200, content=ValidateResponse(is_unique=True).model_dump())
+                return JSONResponse(status_code=200, content=ValidateResponse(is_unique=False).model_dump())
+            except ValidationError as e:
+                log.error("Validation error in application controller: %s", str(e))
+                raise HTTPException(status_code=422, detail="Validation error") from e
+            except DatabaseError as e:
+                log.error("Database error in application controller: %s", str(e))
+                raise HTTPException(status_code=500, detail="Database error") from e
+            except Exception as e:
+                log.error("Unexpected error in application controller.py: %s", str(e))
+                raise HTTPException(
+                    status_code=500, detail="An unexpected error occurred"
+                ) from e
+                
 
         @router.post("/select")
         async def select(input: SelectApplicationRequest) -> JSONResponse:

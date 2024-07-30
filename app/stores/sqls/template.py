@@ -1,4 +1,4 @@
-from app.models.application import Column, DataType, PrimaryKey
+from app.models.application.base import Column, DataType, PrimaryKey
 import logging
 
 log = logging.getLogger(__name__)

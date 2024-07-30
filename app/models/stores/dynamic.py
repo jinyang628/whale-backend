@@ -13,7 +13,7 @@ from sqlalchemy import (
     Column as SQLAlchemyColumn,
 )
 from sqlalchemy.dialects.postgresql import ENUM as PostgreSQLEnum
-from app.models.application import DataType, PrimaryKey, Table
+from app.models.application.base import DataType, PrimaryKey, Table
 
 # Create a registry
 mapper_registry = registry()

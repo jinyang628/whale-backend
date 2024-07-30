@@ -1,15 +1,11 @@
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app.exceptions.exception import DatabaseError
-from app.models.application import SelectApplicationResponse
 from app.models.feedback import FeedbackRequest
-from app.models.user import GetCacheResponse, UpdateCacheRequest
-from app.services.application import ApplicationService
 from app.services.feedback import FeedbackService
 
 log = logging.getLogger(__name__)

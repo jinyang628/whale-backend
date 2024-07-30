@@ -1,7 +1,7 @@
 from typing import Any
 from dateutil import parser
 
-from app.models.application import DataType, Table
+from app.models.application.base import DataType, Table
 
 
 def process_client_facing_rows(

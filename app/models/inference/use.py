@@ -1,7 +1,7 @@
 from typing import Any, Optional
 from pydantic import BaseModel
 from enum import StrEnum
-from app.models.application import ApplicationContent
+from app.models.application.base import ApplicationContent
 
 from app.models.message.use import UseMessage
 

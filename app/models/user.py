@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.models.application import SelectApplicationResponse
+from app.models.application.select import SelectApplicationResponse
 
 
 class UpdateCacheRequest(BaseModel):

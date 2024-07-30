@@ -5,7 +5,7 @@ from typing import Any, Optional, Type
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 import uuid
 from app.connectors.orm import Orm
-from app.models.application import Table
+from app.models.application.base import Table
 from app.models.inference.use import (
     ApplicationContent,
     HttpMethod,

@@ -4,12 +4,13 @@ from typing import Optional
 
 from app.connectors.orm import Orm
 from app.models.stores.application import Application, ApplicationORM
-from app.models.application import (
+from app.models.application.base import (
     ApplicationContent,
-    PostApplicationRequest,
-    PostApplicationResponse,
-    SelectApplicationResponse,
     Table,
+)
+from app.models.application.select import SelectApplicationResponse
+from app.models.application.build import (
+    PostApplicationResponse,
 )
 from app.models.stores.user import UserORM
 from app.stores.base.main import execute_client_script

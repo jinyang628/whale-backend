@@ -1,11 +1,13 @@
+import logging
+
 from pydantic import BaseModel
-from app.models.stores.base import BaseObject
-from app.models.utils import sql_value_to_typed_value
-from sqlalchemy import UUID, Column, Integer, String, DateTime
+from sqlalchemy import UUID, Column, DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
-import logging
+
+from app.models.stores.base import BaseObject
+from app.models.utils import sql_value_to_typed_value
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -34,19 +36,13 @@ class Feedback(BaseObject):
     feedback: str
 
     @classmethod
-    def local(
-        cls,
-        user_id: str,
-        name: str,
-        email: str,
-        feedback: str
-    ):
+    def local(cls, user_id: str, name: str, email: str, feedback: str):
         return Feedback(
             id=Feedback.generate_id(),
             user_id=user_id,
             name=name,
             email=email,
-            feedback=feedback
+            feedback=feedback,
         )
 
     @classmethod
@@ -59,5 +55,5 @@ class Feedback(BaseObject):
             user_id=sql_value_to_typed_value(dict=kwargs, key="user_id", type=str),
             name=sql_value_to_typed_value(dict=kwargs, key="name", type=str),
             email=sql_value_to_typed_value(dict=kwargs, key="email", type=str),
-            feedback=sql_value_to_typed_value(dict=kwargs, key="feedback", type=str)
+            feedback=sql_value_to_typed_value(dict=kwargs, key="feedback", type=str),
         )

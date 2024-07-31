@@ -6,15 +6,11 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
 from app.exceptions.exception import DatabaseError
-from app.models.application.base import (
-    ApplicationContent
-)
+from app.models.application.base import ApplicationContent
+from app.models.application.build import PostApplicationResponse
 from app.models.application.select import (
     SelectApplicationRequest,
-    SelectApplicationResponse
-)
-from app.models.application.build import (
-    PostApplicationResponse
+    SelectApplicationResponse,
 )
 from app.models.application.validate import ValidateResponse
 from app.services.application import ApplicationService
@@ -38,8 +34,12 @@ class ApplicationController:
         @router.post("/build")
         async def build(input: ApplicationContent) -> JSONResponse:
             try:
-                response: PostApplicationResponse = await self.service.build(application_content=input)
-                await self.service.generate_client_application(application_content=input)
+                response: PostApplicationResponse = await self.service.build(
+                    application_content=input
+                )
+                await self.service.generate_client_application(
+                    application_content=input
+                )
                 return JSONResponse(status_code=200, content=response.model_dump())
             except ValidationError as e:
                 log.error("Validation error in application controller: %s", str(e))
@@ -52,14 +52,22 @@ class ApplicationController:
                 raise HTTPException(
                     status_code=500, detail="An unexpected error occurred"
                 ) from e
-        
+
         @router.get("/validate")
         async def validate(name: str) -> JSONResponse:
             try:
-                response: Optional[SelectApplicationResponse] = await self.service.select(name=name)
+                response: Optional[SelectApplicationResponse] = (
+                    await self.service.select(name=name)
+                )
                 if not response:
-                    return JSONResponse(status_code=200, content=ValidateResponse(is_unique=True).model_dump())
-                return JSONResponse(status_code=200, content=ValidateResponse(is_unique=False).model_dump())
+                    return JSONResponse(
+                        status_code=200,
+                        content=ValidateResponse(is_unique=True).model_dump(),
+                    )
+                return JSONResponse(
+                    status_code=200,
+                    content=ValidateResponse(is_unique=False).model_dump(),
+                )
             except ValidationError as e:
                 log.error("Validation error in application controller: %s", str(e))
                 raise HTTPException(status_code=422, detail="Validation error") from e
@@ -71,7 +79,6 @@ class ApplicationController:
                 raise HTTPException(
                     status_code=500, detail="An unexpected error occurred"
                 ) from e
-                
 
         @router.post("/select")
         async def select(input: SelectApplicationRequest) -> JSONResponse:

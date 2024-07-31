@@ -1,6 +1,8 @@
-from enum import StrEnum
-from pydantic import BaseModel
 from abc import ABC
+from enum import StrEnum
+
+from pydantic import BaseModel
+
 
 class Role(StrEnum):
     USER = "user"

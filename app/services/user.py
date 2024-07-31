@@ -1,4 +1,5 @@
 from typing import Any, Optional
+
 from app.connectors.orm import Orm
 from app.models.stores.user import User, UserORM
 

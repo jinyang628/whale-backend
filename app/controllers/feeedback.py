@@ -30,7 +30,7 @@ class FeedbackController:
                     id=input.id,
                     name=input.name,
                     email=input.email,
-                    feedback=input.feedback,                    
+                    feedback=input.feedback,
                 )
             except ValidationError as e:
                 log.error("Validation error in feedback controller: %s", str(e))

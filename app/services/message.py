@@ -1,9 +1,11 @@
 import copy
 import json
 import logging
-from typing import Any, Optional, Type
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 import uuid
+from typing import Any, Optional, Type
+
+from sqlalchemy.orm.decl_api import DeclarativeMeta
+
 from app.connectors.orm import Orm
 from app.models.application.base import Table
 from app.models.inference.use import (
@@ -13,30 +15,30 @@ from app.models.inference.use import (
     UseInferenceResponse,
 )
 from app.models.message.create import CreateMessage, CreateResponse
-from app.models.message.use import UseMessage, UseResponse
-from app.models.message.shared import Role
-from app.models.stores.application import Application, ApplicationORM
-from app.models.stores.dynamic import create_dynamic_orm
 from app.models.message.reverse import (
     ReverseActionClarification,
     ReverseActionDelete,
     ReverseActionGet,
     ReverseActionPost,
-    ReverseActionWrapper,
     ReverseActionUpdate,
+    ReverseActionWrapper,
 )
+from app.models.message.shared import Role
+from app.models.message.use import UseMessage, UseResponse
+from app.models.stores.application import Application, ApplicationORM
+from app.models.stores.dynamic import create_dynamic_orm
 from app.services.application import ApplicationService
+from app.services.user import UserService
 from app.stores.utils.frontend_message import translate_filter_dict
 from app.stores.utils.process import (
     identify_columns_to_process,
     process_client_facing_filter_dict,
+    process_client_facing_rows,
     process_client_facing_update_dict,
     process_datetime_or_date_values_of_filter_dict,
     process_datetime_or_date_values_of_update_dict,
     process_datetime_values_of_row,
-    process_client_facing_rows,
 )
-from app.services.user import UserService
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +85,9 @@ class MessageService:
     ) -> UseResponse:
         if inference_response.clarification:
             response_message_lst = [
-                UseMessage(role=Role.ASSISTANT, content=inference_response.clarification)
+                UseMessage(
+                    role=Role.ASSISTANT, content=inference_response.clarification
+                )
             ]
             chat_history.append(user_message)
             chat_history.extend(response_message_lst)
@@ -153,7 +157,7 @@ class MessageService:
                 raise TypeError(
                     "Invalid action type when trying to reverse inferenec response"
                 )
-                
+
     async def construct_create_response(
         self,
         user_message: CreateMessage,
@@ -167,17 +171,23 @@ class MessageService:
         message_content: str = ""
         if concluding_message:
             message_content = concluding_message
-            await self.application_service.build(application_content=application_content)
-            await self.application_service.generate_client_application(application_content=application_content)
+            await self.application_service.build(
+                application_content=application_content
+            )
+            await self.application_service.generate_client_application(
+                application_content=application_content
+            )
             is_finished = True
         elif overview:
-            message_content = f"{overview}\n{clarification}" if clarification else overview
+            message_content = (
+                f"{overview}\n{clarification}" if clarification else overview
+            )
         else:
             message_content = clarification
         assistant_message = CreateMessage(
-            role=Role.ASSISTANT, 
-            content=message_content, 
-            application_content=application_content
+            role=Role.ASSISTANT,
+            content=message_content,
+            application_content=application_content,
         )
         chat_history.append(user_message)
         chat_history.append(assistant_message)
@@ -187,7 +197,6 @@ class MessageService:
             application_content=application_content,
             is_finished=is_finished,
         )
-        
 
 
 ###
@@ -337,7 +346,7 @@ async def _execute_post_method(
     log.info("Initiating POST request")
     ids, rows = await orm.post(model=table_orm_model, data=rows_to_insert)
     log.info(f"Rows from POST request: {rows}")
-    
+
     rows = process_client_facing_rows(
         db_rows=rows,
         datetime_column_names_to_process=datetime_column_names_to_process,

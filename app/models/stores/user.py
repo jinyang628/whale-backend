@@ -1,10 +1,12 @@
+import logging
+
 from pydantic import BaseModel
-from app.models.utils import sql_value_to_typed_value
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
-import logging
+
+from app.models.utils import sql_value_to_typed_value
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

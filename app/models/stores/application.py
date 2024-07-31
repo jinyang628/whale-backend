@@ -1,10 +1,12 @@
 import json
-from app.models.stores.base import BaseObject
-from app.models.utils import sql_value_to_typed_value
-from sqlalchemy import JSON, UUID, Column, Integer, String, DateTime
+import logging
+
+from sqlalchemy import JSON, UUID, Column, DateTime, Integer, String
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
-import logging
+
+from app.models.stores.base import BaseObject
+from app.models.utils import sql_value_to_typed_value
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

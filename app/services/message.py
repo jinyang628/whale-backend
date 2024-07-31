@@ -8,13 +8,21 @@ from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 from app.connectors.orm import Orm
 from app.models.application.base import Table
-from app.models.inference.use import (ApplicationContent, HttpMethod,
-                                      HttpMethodResponse, UseInferenceResponse)
+from app.models.inference.use import (
+    ApplicationContent,
+    HttpMethod,
+    HttpMethodResponse,
+    UseInferenceResponse,
+)
 from app.models.message.create import CreateMessage, CreateResponse
-from app.models.message.reverse import (ReverseActionClarification,
-                                        ReverseActionDelete, ReverseActionGet,
-                                        ReverseActionPost, ReverseActionUpdate,
-                                        ReverseActionWrapper)
+from app.models.message.reverse import (
+    ReverseActionClarification,
+    ReverseActionDelete,
+    ReverseActionGet,
+    ReverseActionPost,
+    ReverseActionUpdate,
+    ReverseActionWrapper,
+)
 from app.models.message.shared import Role
 from app.models.message.use import UseMessage, UseResponse
 from app.models.stores.application import Application, ApplicationORM
@@ -23,11 +31,14 @@ from app.services.application import ApplicationService
 from app.services.user import UserService
 from app.stores.utils.frontend_message import translate_filter_dict
 from app.stores.utils.process import (
-    identify_columns_to_process, process_client_facing_filter_dict,
-    process_client_facing_rows, process_client_facing_update_dict,
+    identify_columns_to_process,
+    process_client_facing_filter_dict,
+    process_client_facing_rows,
+    process_client_facing_update_dict,
     process_datetime_or_date_values_of_filter_dict,
     process_datetime_or_date_values_of_update_dict,
-    process_datetime_values_of_row)
+    process_datetime_values_of_row,
+)
 
 log = logging.getLogger(__name__)
 

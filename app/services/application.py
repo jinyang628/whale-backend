@@ -9,8 +9,10 @@ from app.models.application.select import SelectApplicationResponse
 from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.user import UserORM
 from app.stores.base.main import execute_client_script
-from app.stores.sqls.template import (generate_foreign_key_script,
-                                      generate_table_creation_script)
+from app.stores.sqls.template import (
+    generate_foreign_key_script,
+    generate_table_creation_script,
+)
 
 log = logging.getLogger(__name__)
 

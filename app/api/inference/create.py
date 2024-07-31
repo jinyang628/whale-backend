@@ -4,8 +4,7 @@ import os
 import requests
 from dotenv import load_dotenv
 
-from app.models.inference.create import (CreateInferenceRequest,
-                                         CreateInferenceResponse)
+from app.models.inference.create import CreateInferenceRequest, CreateInferenceResponse
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)

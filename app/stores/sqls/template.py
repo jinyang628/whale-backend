@@ -1,5 +1,6 @@
-from app.models.application.base import Column, DataType, PrimaryKey
 import logging
+
+from app.models.application.base import Column, DataType, PrimaryKey
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

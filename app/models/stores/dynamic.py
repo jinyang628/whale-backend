@@ -1,18 +1,11 @@
+from sqlalchemy import TIMESTAMP, UUID, Boolean
+from sqlalchemy import Column as SQLAlchemyColumn
+from sqlalchemy import Date, Enum, Float, Integer, String
+from sqlalchemy import Table as SQLAlchemyTable
+from sqlalchemy.dialects.postgresql import ENUM as PostgreSQLEnum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import registry
-from sqlalchemy import (
-    UUID,
-    Boolean,
-    Date,
-    TIMESTAMP,
-    Enum,
-    Float,
-    Integer,
-    String,
-    Table as SQLAlchemyTable,
-    Column as SQLAlchemyColumn,
-)
-from sqlalchemy.dialects.postgresql import ENUM as PostgreSQLEnum
+
 from app.models.application.base import DataType, PrimaryKey, Table
 
 # Create a registry

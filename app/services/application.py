@@ -3,15 +3,10 @@ import logging
 from typing import Optional
 
 from app.connectors.orm import Orm
-from app.models.stores.application import Application, ApplicationORM
-from app.models.application.base import (
-    ApplicationContent,
-    Table,
-)
+from app.models.application.base import ApplicationContent, Table
+from app.models.application.build import PostApplicationResponse
 from app.models.application.select import SelectApplicationResponse
-from app.models.application.build import (
-    PostApplicationResponse,
-)
+from app.models.stores.application import Application, ApplicationORM
 from app.models.stores.user import UserORM
 from app.stores.base.main import execute_client_script
 from app.stores.sqls.template import (
@@ -24,10 +19,16 @@ log = logging.getLogger(__name__)
 
 class ApplicationService:
 
-    async def build(self, application_content: ApplicationContent) -> PostApplicationResponse:
+    async def build(
+        self, application_content: ApplicationContent
+    ) -> PostApplicationResponse:
         """Inserts the entry into the application table."""
-        tables_dump: list[dict] = [table.model_dump() for table in application_content.tables]
-        application = Application.local(name=application_content.name, tables=tables_dump)
+        tables_dump: list[dict] = [
+            table.model_dump() for table in application_content.tables
+        ]
+        application = Application.local(
+            name=application_content.name, tables=tables_dump
+        )
         orm = Orm(is_user_facing=False)
         await orm.post(model=ApplicationORM, data=[application.model_dump()])
         return PostApplicationResponse(name=application.name)
@@ -60,7 +61,9 @@ class ApplicationService:
         for table in application_content.tables:
             table_name = f"{application_content.name}_{table.name}"
             foreign_key_script = generate_foreign_key_script(
-                input_name=application_content.name, table_name=table_name, columns=table.columns
+                input_name=application_content.name,
+                table_name=table_name,
+                columns=table.columns,
             )
             if not foreign_key_script:
                 continue

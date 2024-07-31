@@ -1,11 +1,14 @@
 from typing import Any, Optional
+
 from pydantic import BaseModel
 
-from app.models.message.shared import Message
 from app.models.message.reverse import ReverseActionWrapper
+from app.models.message.shared import Message
+
 
 class UseMessage(Message):
     rows: Optional[list[dict[str, Any]]] = None
+
 
 class UseRequest(BaseModel):
     message: str

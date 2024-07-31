@@ -1,18 +1,21 @@
 import logging
-import requests
 
+import requests
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
-from app.api.inference.use import infer_use
 from app.api.inference.create import infer_create
-from app.models.inference.create import CreateInferenceRequest, CreateInferenceResponse
-from app.models.inference.use import ApplicationContent, UseInferenceRequest, UseInferenceResponse
-from app.models.message.create import CreateMessage, CreateRequest, CreateResponse
-from app.models.message.use import UseMessage, UseRequest, UseResponse
-from app.models.message.shared import Role
+from app.api.inference.use import infer_use
+from app.models.inference.create import (CreateInferenceRequest,
+                                         CreateInferenceResponse)
+from app.models.inference.use import (ApplicationContent, UseInferenceRequest,
+                                      UseInferenceResponse)
+from app.models.message.create import (CreateMessage, CreateRequest,
+                                       CreateResponse)
 from app.models.message.reverse import ReverseActionWrapper
+from app.models.message.shared import Role
+from app.models.message.use import UseMessage, UseRequest, UseResponse
 from app.services.message import MessageService
 
 log = logging.getLogger(__name__)

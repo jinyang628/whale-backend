@@ -1,9 +1,8 @@
-import requests
-from dotenv import load_dotenv
-
+import logging
 import os
 
-import logging
+import requests
+from dotenv import load_dotenv
 
 from app.models.inference.create import CreateInferenceRequest, CreateInferenceResponse
 

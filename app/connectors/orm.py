@@ -1,22 +1,27 @@
 from datetime import datetime
+
 from pydantic import BaseModel
+
 <<<<<<< Updated upstream
-from sqlalchemy import BinaryExpression, column, or_, and_, select, delete, true, update
 from asyncpg.pgproto.pgproto import UUID as AsyncpgUUID
-from sqlalchemy.orm import Session, sessionmaker, aliased
+from sqlalchemy import (BinaryExpression, and_, column, delete, or_, select,
+                        true, update)
+from sqlalchemy.orm import Session, aliased, sessionmaker
+
 =======
-from sqlalchemy import or_, and_, select, delete, update, Table, MetaData
-from sqlalchemy.sql import text
+from sqlalchemy import MetaData, Table, and_, delete, or_, select, update
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.sql import text
+
 >>>>>>> Stashed changes
+import logging
+import os
+from typing import Any, Optional, Type
+
+from dotenv import find_dotenv, load_dotenv
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql import text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from dotenv import find_dotenv, load_dotenv
-import os
-
-import logging
-from typing import Any, Optional, Type
 
 from app.models.stores.base import BaseObject
 

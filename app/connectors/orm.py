@@ -1,6 +1,5 @@
 import logging
 import os
-from datetime import datetime
 from typing import Any, Optional, Type
 
 from asyncpg.pgproto.pgproto import UUID as AsyncpgUUID
@@ -8,7 +7,7 @@ from dotenv import find_dotenv, load_dotenv
 from pydantic import BaseModel
 from sqlalchemy import BinaryExpression, and_, column, delete, or_, select, true, update
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import Session, aliased, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql import text
 
@@ -73,8 +72,6 @@ class Orm:
             for row in result:
                 row_dict = {}
                 for column, value in zip(columns, row):
-                    if isinstance(value, AsyncpgUUID):
-                        value = str(value)
                     row_dict[column] = value
                 inserted_rows.append(row_dict)
 
@@ -82,7 +79,7 @@ class Orm:
             log.info(f"Inserted {len(data)} rows into {model.__tablename__}")
 
         return inserted_ids, inserted_rows
-
+    
     async def get_inference_result(
         self,
         model: Type[DeclarativeMeta],
@@ -133,8 +130,6 @@ class Orm:
         for row in result:
             row_dict = {}
             for column, value in zip(columns, row):
-                if isinstance(value, AsyncpgUUID):
-                    value = str(value)
                 row_dict[column] = value
             inference_results.append(row_dict)
 
@@ -244,8 +239,6 @@ class Orm:
             for row in result:
                 row_dict = {}
                 for column, value in zip(columns, row):
-                    if isinstance(value, AsyncpgUUID):
-                        value = str(value)
                     row_dict[column] = value
                 original_results.append(row_dict)
                 reverse_filters["conditions"].append(
@@ -270,8 +263,6 @@ class Orm:
             for row in result:
                 row_dict = {}
                 for column, value in zip(columns, row):
-                    if isinstance(value, AsyncpgUUID):
-                        value = str(value)
                     row_dict[column] = value
                 updated_results.append(row_dict)
 
@@ -379,54 +370,6 @@ class Orm:
             await session.execute(update_stmt, params)
             await session.commit()
             log.info(f"Updated rows in {orm_model.__tablename__}")
-
-    ### Miscellaneous ###
-    def get_column(
-        self,
-        model: Type[DeclarativeMeta],
-        column: str,
-        filters: dict,
-        is_and: bool = True,
-        batch_size: int = 6500,
-    ) -> list[Any]:
-        """Fetches specific columns from the specified table based on the filters provided.
-
-        Args:
-            model (Type[DeclarativeMeta]): The SQLAlchemy model to fetch data from.
-            columns (str): The column name to fetch
-            filters (dict): The filters to apply to the query.
-            is_and (bool, optional): Whether to treat the filters as an OR/AND condition. Defaults to True (AND condition).
-
-        Returns:
-            list[Any]: A list of tuples where each tuple contains the values of the requested columns.
-        """
-        results = []
-        offset = 0
-
-        with Session(self.engine) as session:
-            while True:
-                query = select(getattr(model, column))
-                if filters:
-                    conditions = []
-                    for key, value in filters.items():
-                        attribute = getattr(model, key)
-                        if isinstance(value, list) and value:
-                            conditions.append(attribute.in_(value))
-                        else:
-                            conditions.append(attribute == value)
-                    condition = and_ if is_and else or_
-                    query = query.filter(condition(*conditions))
-
-                query = query.limit(batch_size).offset(offset)
-                batch_results = session.execute(query).scalars().all()
-
-                if not batch_results:
-                    break
-
-                results.extend(batch_results)
-                offset += batch_size
-        return results
-
 
 def _build_filter(
     model: Type[DeclarativeMeta], filter_dict: dict[str, Any], param_prefix: str = "p"

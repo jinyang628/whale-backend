@@ -37,7 +37,7 @@ from app.stores.utils.process import (
     process_client_facing_update_dict,
     process_datetime_or_date_values_of_filter_dict,
     process_datetime_or_date_values_of_update_dict,
-    process_datetime_values_of_row,
+    process_values_of_row,
 )
 
 log = logging.getLogger(__name__)
@@ -334,13 +334,14 @@ async def _execute_post_method(
     )
 
     log.info("Processing data for POST request")
-    datetime_column_names_to_process, date_column_names_to_process = (
+    datetime_column_names_to_process, date_column_names_to_process, uuid_column_names_to_process = (
         identify_columns_to_process(table=target_table)
     )
-    rows_to_insert: list[dict[str, Any]] = process_datetime_values_of_row(
+    rows_to_insert: list[dict[str, Any]] = process_values_of_row(
         rows=copied_rows,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process,
+        uuid_column_names_to_process=uuid_column_names_to_process,
     )
 
     log.info("Initiating POST request")
@@ -351,6 +352,7 @@ async def _execute_post_method(
         db_rows=rows,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process,
+        uuid_column_names_to_process=uuid_column_names_to_process,
     )
 
     message_content: str = (
@@ -378,19 +380,21 @@ async def _execute_put_method(
     copied_update_dict: list[dict[str, Any]] = copy.deepcopy(update_dict)
 
     log.info("Processing data for PUT request")
-    datetime_column_names_to_process, date_column_names_to_process = (
+    datetime_column_names_to_process, date_column_names_to_process, uuid_column_names_to_process = (
         identify_columns_to_process(table=target_table)
     )
     copied_filter_dict = process_datetime_or_date_values_of_filter_dict(
         dict_to_process=copied_filter_dict,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process,
+        uuid_column_names_to_process=uuid_column_names_to_process,
     )
 
     copied_update_dict = process_datetime_or_date_values_of_update_dict(
         dict_to_process=copied_update_dict,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process,
+        uuid_column_names_to_process=uuid_column_names_to_process,
     )
 
     log.info("Initiating PUT request")
@@ -405,18 +409,21 @@ async def _execute_put_method(
         db_rows=rows,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process,
+        uuid_column_names_to_process=uuid_column_names_to_process,
     )
 
     reverse_filters = process_client_facing_filter_dict(
         db_dict=reverse_filters,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process,
+        uuid_column_names_to_process=uuid_column_names_to_process,
     )
 
     reverse_updated_data = process_client_facing_update_dict(
         db_dict=reverse_updated_data,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process,
+        uuid_column_names_to_process=uuid_column_names_to_process,
     )
 
     message_content: str = ""
@@ -449,13 +456,14 @@ async def _execute_delete_method(
     copied_filter_dict: list[dict[str, Any]] = copy.deepcopy(filter_dict)
 
     log.info("Processing data for DELETE request")
-    datetime_column_names_to_process, date_column_names_to_process = (
+    datetime_column_names_to_process, date_column_names_to_process, uuid_column_names_to_process = (
         identify_columns_to_process(table=target_table)
     )
     copied_filter_dict = process_datetime_or_date_values_of_filter_dict(
         dict_to_process=copied_filter_dict,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process,
+        uuid_column_names_to_process=uuid_column_names_to_process,
     )
 
     log.info("Initiating DELETE request")
@@ -469,6 +477,7 @@ async def _execute_delete_method(
         db_rows=rows,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process,
+        uuid_column_names_to_process=uuid_column_names_to_process,
     )
 
     message_content: str = ""
@@ -501,13 +510,14 @@ async def _execute_get_method(
     copied_filter_dict: list[dict[str, Any]] = copy.deepcopy(filter_dict)
 
     log.info("Processing data for GET request")
-    datetime_column_names_to_process, date_column_names_to_process = (
+    datetime_column_names_to_process, date_column_names_to_process, uuid_column_names_to_process = (
         identify_columns_to_process(table=target_table)
     )
     copied_filter_dict = process_datetime_or_date_values_of_filter_dict(
         dict_to_process=copied_filter_dict,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process,
+        uuid_column_names_to_process=uuid_column_names_to_process,
     )
 
     log.info("Initiating GET request")
@@ -521,6 +531,7 @@ async def _execute_get_method(
         db_rows=rows,
         datetime_column_names_to_process=datetime_column_names_to_process,
         date_column_names_to_process=date_column_names_to_process,
+        uuid_column_names_to_process=uuid_column_names_to_process,
     )
 
     message_content: str = ""

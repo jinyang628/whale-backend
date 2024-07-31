@@ -13,18 +13,17 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Set up Python
+    - name: Set up Python 3.12.1
       uses: actions/setup-python@v4
       with:
-        python-version: '3.x'
+        python-version: '3.12.1'
 
     - name: Install Poetry
       run: |
-        curl -sSL https://install.python-poetry.org
+        curl -sSL https://install.python-poetry.org | python3 -
 
     - name: Install dependencies
       run: |
-        poetry env use python3.12.1
         poetry install
 
     - name: Run isort

@@ -6,7 +6,8 @@ from typing import Any, Optional, Type
 from asyncpg.pgproto.pgproto import UUID as AsyncpgUUID
 from dotenv import find_dotenv, load_dotenv
 from pydantic import BaseModel
-from sqlalchemy import BinaryExpression, and_, column, delete, or_, select, true, update
+from sqlalchemy import (BinaryExpression, and_, column, delete, or_, select,
+                        true, update)
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import Session, aliased, sessionmaker
 from sqlalchemy.orm.decl_api import DeclarativeMeta

@@ -16,11 +16,11 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.x'
+        python-version: 'python3.12.1'
 
     - name: Install Poetry
       run: |
-        curl -sSL https://install.python-poetry.org | python3 -
+        curl -sSL https://install.python-poetry.org | python3.12.1
 
     - name: Install dependencies
       run: |

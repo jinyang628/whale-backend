@@ -20,10 +20,11 @@ jobs:
 
     - name: Install Poetry
       run: |
-        curl -sSL https://install.python-poetry.org | python3.12.1
+        curl -sSL https://install.python-poetry.org
 
     - name: Install dependencies
       run: |
+        poetry env use python3.12.1
         poetry install
 
     - name: Run isort

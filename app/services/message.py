@@ -165,7 +165,9 @@ class MessageService:
         overview: Optional[str],
         clarification: Optional[str],
         concluding_message: Optional[str],
-        application_content: list[ApplicationContent],
+        application_content: ApplicationContent,
+        user_id: str,
+        all_application_names: list[str],
     ) -> CreateResponse:
         is_finished = False
         message_content: str = ""
@@ -176,6 +178,17 @@ class MessageService:
             )
             await self.application_service.generate_client_application(
                 application_content=application_content
+            )
+            all_application_names.append(application_content.name)
+            await self.user_service.update(
+                filters={
+                    "boolean_clause": "AND",
+                    "conditions": [
+                        {"column": "id", "operator": "=", "value": user_id}
+                    ],
+                },
+                updated_data={"applications": all_application_names},
+                increment_field=None,
             )
             is_finished = True
         elif overview:

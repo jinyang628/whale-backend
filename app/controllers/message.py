@@ -91,6 +91,8 @@ class MessageController:
                     clarification=inference_response.clarification,
                     concluding_message=inference_response.concluding_message,
                     application_content=inference_response.application_content,
+                    user_id=input.user_id,
+                    all_application_names=input.all_application_names,
                 )
                 log.info(f"Returning result to frontend: {result.model_dump()}")
                 return JSONResponse(status_code=200, content=result.model_dump())

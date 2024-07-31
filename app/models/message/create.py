@@ -13,6 +13,8 @@ class CreateMessage(Message):
 class CreateRequest(BaseModel):
     message: str
     chat_history: list[CreateMessage]
+    user_id: str
+    all_application_names: list[str]
 
 
 class CreateResponse(BaseModel):

@@ -30,6 +30,7 @@ def create_dynamic_orm(table: Table, application_name: str):
     # Check if the class already exists in the cache
     if class_name in orm_class_cache:
         return orm_class_cache[class_name]
+<<<<<<< Updated upstream
 
     # Create the SQLAlchemy Table object
     columns: SQLAlchemyColumn = []
@@ -75,6 +76,25 @@ def create_dynamic_orm(table: Table, application_name: str):
         mapper_registry.metadata,
         *columns,
         extend_existing=True,  # This allows redefining tables if they already exist in the metadata
+=======
+    
+    columns = [
+        SQLAlchemyColumn(
+            col.name,
+            _get_sqlalchemy_type(col.data_type),
+            primary_key=(col.primary_key != PrimaryKey.NONE),
+            autoincrement=(col.primary_key == PrimaryKey.AUTO_INCREMENT),
+            nullable=col.nullable
+        ) for col in table.columns
+    ]
+    
+    # Create the SQLAlchemy Table object
+    sqlalchemy_table = SQLAlchemyTable(
+        table_name, 
+        mapper_registry.metadata,
+        *columns,
+        extend_existing=True
+>>>>>>> Stashed changes
     )
 
     # Create the ORM class

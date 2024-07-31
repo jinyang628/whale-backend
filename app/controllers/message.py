@@ -48,6 +48,7 @@ class MessageController:
                     )
                 )
                 log.info(f"Inference response: {inference_response}")
+<<<<<<< Updated upstream
                 result: UseResponse = (
                     await self.service.execute_inference_response(
                         user_message=UseMessage(role=Role.USER, content=input.message),
@@ -56,6 +57,17 @@ class MessageController:
                         inference_response=inference_response,
                         user_id=input.user_id,
                     )
+=======
+                result: PostMessageResponse = await self.service.execute_inference_response(
+                    user_message=Message(
+                        role=Role.USER,
+                        content=input.message
+                    ),
+                    chat_history=input.chat_history,
+                    reverse_stack=input.reverse_stack,
+                    inference_response=inference_response,
+                    application_content_lst=application_content_lst
+>>>>>>> Stashed changes
                 )
                 log.info(f"Returning result to frontend: {result.model_dump()}")
                 return JSONResponse(status_code=200, content=result.model_dump())

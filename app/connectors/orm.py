@@ -1,8 +1,14 @@
 from datetime import datetime
 from pydantic import BaseModel
+<<<<<<< Updated upstream
 from sqlalchemy import BinaryExpression, column, or_, and_, select, delete, true, update
 from asyncpg.pgproto.pgproto import UUID as AsyncpgUUID
 from sqlalchemy.orm import Session, sessionmaker, aliased
+=======
+from sqlalchemy import or_, and_, select, delete, update, Table, MetaData
+from sqlalchemy.sql import text
+from sqlalchemy.orm import Session, sessionmaker
+>>>>>>> Stashed changes
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -37,10 +43,14 @@ class Orm:
         self, model: Type[DeclarativeMeta], data: list[dict[str, Any]]
     ) -> tuple[list[Any], list[dict[str, Any]]]:
         """
-        Inserts a list of model instances into the database.
+        Inserts a list of model instances into the database and returns the complete inserted rows.
 
         Parameters:
-        models (list[FishBaseObject]): A list of FishBaseObject to be inserted.
+        model (Type[DeclarativeMeta]): The SQLAlchemy model class.
+        data (list[dict[str, Any]]): A list of dictionaries containing the data to be inserted.
+
+        Returns:
+        tuple[list[Any], list[dict[str, Any]]]: A tuple containing a list of inserted IDs and a list of complete inserted rows.
         """
         orm_instances = [model(**item) for item in data]
         inserted_ids: list[Any] = []
@@ -49,6 +59,7 @@ class Orm:
         async with self.sessionmaker() as session:
             session.add_all(orm_instances)
             await session.flush()
+<<<<<<< Updated upstream
             for instance in orm_instances:
                 if isinstance(instance.id, AsyncpgUUID):
                     inserted_ids.append(str(instance.id))
@@ -81,6 +92,35 @@ class Orm:
             await session.commit()
             log.info(f"Inserted {len(data)} rows into {model.__tablename__}")
 
+=======
+            
+            # Collect IDs of inserted instances
+            inserted_ids = [instance.id for instance in orm_instances]
+            
+            # Fetch column names directly from the database (there might be server-side rendered columns such as created_at/updated_at)
+            table_name = model.__tablename__
+            columns_query = text(f"SELECT column_name FROM information_schema.columns WHERE table_name = :table_name")
+            result = await session.execute(columns_query, {'table_name': table_name})
+            columns = [row[0] for row in result]
+            
+            # Construct a query to select all columns for the inserted rows
+            columns_str = ', '.join(columns)
+            select_query = text(f"SELECT {columns_str} FROM {table_name} WHERE id = ANY(:ids)")
+            result = await session.execute(select_query, {'ids': inserted_ids})
+            
+            for row in result:
+                row_dict = {}
+                for column, value in zip(columns, row):
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
+                    row_dict[column] = value
+                inserted_rows.append(row_dict)
+                logging.info(f"Inserted row: {row_dict}")
+            
+            await session.commit()
+            log.info(f"Inserted {len(data)} rows into {table_name}")
+        
+>>>>>>> Stashed changes
         return inserted_ids, inserted_rows
 
     async def get_inference_result(

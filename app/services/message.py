@@ -3,7 +3,11 @@ import json
 import logging
 from typing import Any, Optional, Type
 from sqlalchemy.orm.decl_api import DeclarativeMeta
+<<<<<<< Updated upstream
 import uuid
+=======
+
+>>>>>>> Stashed changes
 from app.connectors.orm import Orm
 from app.models.application.base import Table
 from app.models.inference.use import (
@@ -41,7 +45,10 @@ from app.services.user import UserService
 log = logging.getLogger(__name__)
 
 
+<<<<<<< Updated upstream
 # TODO: Abstract the client ORM and internal ORM into the connectors folder (services shouldnt need to load from env in their own files)
+=======
+>>>>>>> Stashed changes
 class MessageService:
     def __init__(self):
         self.user_service = UserService()
@@ -78,6 +85,7 @@ class MessageService:
         user_message: UseMessage,
         chat_history: list[UseMessage],
         reverse_stack: list[ReverseActionWrapper],
+<<<<<<< Updated upstream
         inference_response: UseInferenceResponse,
         user_id: str,
     ) -> UseResponse:
@@ -97,6 +105,14 @@ class MessageService:
             )
         response_message_lst, response_reverse_action_lst = await _execute(
             inference_response=inference_response
+=======
+        inference_response: InferenceResponse,
+        application_content_lst: list[ApplicationContent]
+    ) -> PostMessageResponse:        
+        response_message_content_lst, response_reverse_action_lst = await _execute(
+            inference_response=inference_response,
+            application_content_lst=application_content_lst
+>>>>>>> Stashed changes
         )
         reverse_stack.extend(response_reverse_action_lst)
         chat_history.append(user_message)
@@ -243,22 +259,45 @@ async def _reverse_with_put(
 ### INFERENCE SECTION
 ###
 async def _execute(
+<<<<<<< Updated upstream
     inference_response: UseInferenceResponse,
 ) -> tuple[list[UseMessage], list[ReverseActionWrapper]]:
+=======
+    inference_response: InferenceResponse,
+    application_content_lst: list[ApplicationContent]
+) -> tuple[list[tuple[str, list[dict[str, Any]]]], list[ReverseActionWrapper]]:
+>>>>>>> Stashed changes
     orm = Orm(is_user_facing=True)
     response_message_content_lst: list[UseMessage] = []
     response_reverse_action_lst: list[ReverseActionWrapper] = []
     for http_method_response in inference_response.response:
-        target_table: Optional[Table] = None
+        
+        target_application: Optional[ApplicationContent] = None
+        for application in application_content_lst:
+            if application.name == http_method_response.application.name:
+                target_application = application
+    
+        target_client_facing_table: Optional[Table] = None
+        for table in target_application.tables:
+            if table.name == http_method_response.table_name:
+                target_client_facing_table = table
+                
+        target_db_facing_table: Optional[Table] = None
         for table in http_method_response.application.tables:
             if table.name == http_method_response.table_name:
-                target_table = table
-        if not target_table:
+                target_db_facing_table = table
+                
+        if not target_client_facing_table or not target_db_facing_table:
             raise ValueError(
                 f"Table {http_method_response.table_name} not found in application {http_method_response.application.name}"
             )
         table_orm_model: Type[DeclarativeMeta] = create_dynamic_orm(
+<<<<<<< Updated upstream
             table=target_table, application_name=http_method_response.application.name
+=======
+            table=target_db_facing_table,
+            application_name=http_method_response.application.name
+>>>>>>> Stashed changes
         )
 
         match http_method_response.http_method:
@@ -268,18 +307,30 @@ async def _execute(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     http_method_response=http_method_response,
+<<<<<<< Updated upstream
                     target_table=target_table,
                     application_name=http_method_response.application.name,
+=======
+                    target_table=target_client_facing_table,
+                    application_name=http_method_response.application.name
+>>>>>>> Stashed changes
                 )
             case HttpMethod.PUT:
                 log.info("Executing PUT request")
                 content, rows, reverse_action = await _execute_put_method(
                     orm=orm,
                     table_orm_model=table_orm_model,
+<<<<<<< Updated upstream
                     target_table=target_table,
                     filter_dict=http_method_response.filter_conditions,
                     update_dict=http_method_response.updated_data,
                     application_name=http_method_response.application.name,
+=======
+                    target_table=target_client_facing_table,
+                    filter_dict=filter_dict,
+                    update_dict=update_dict,
+                    application_name=http_method_response.application.name
+>>>>>>> Stashed changes
                 )
             case HttpMethod.DELETE:
                 log.info("Executing DELETE request")
@@ -287,9 +338,15 @@ async def _execute(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     http_method_response=http_method_response,
+<<<<<<< Updated upstream
                     target_table=target_table,
                     filter_dict=http_method_response.filter_conditions,
                     application_name=http_method_response.application.name,
+=======
+                    target_table=target_client_facing_table,
+                    filter_dict=filter_dict,
+                    application_name=http_method_response.application.name
+>>>>>>> Stashed changes
                 )
             case HttpMethod.GET:
                 log.info("Executing GET request")
@@ -297,8 +354,13 @@ async def _execute(
                     orm=orm,
                     table_orm_model=table_orm_model,
                     application_name=http_method_response.application.name,
+<<<<<<< Updated upstream
                     target_table=target_table,
                     filter_dict=http_method_response.filter_conditions,
+=======
+                    target_table=target_client_facing_table,
+                    filter_dict=filter_dict
+>>>>>>> Stashed changes
                 )
             case _:
                 raise ValueError(
@@ -334,8 +396,16 @@ async def _execute_post_method(
         date_column_names_to_process=date_column_names_to_process,
     )
 
+<<<<<<< Updated upstream
     log.info("Initiating POST request")
     ids, rows = await orm.post(model=table_orm_model, data=rows_to_insert)
+=======
+    log.info(f"Initiating POST request with rows: {rows_to_insert}")
+    ids, rows = await orm.post(
+        model=table_orm_model, 
+        data=rows_to_insert
+    )
+>>>>>>> Stashed changes
     log.info(f"Rows from POST request: {rows}")
     
     rows = process_client_facing_rows(

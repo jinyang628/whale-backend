@@ -7,13 +7,12 @@ from pydantic import ValidationError
 
 from app.api.inference.create import infer_create
 from app.api.inference.use import infer_use
-from app.models.inference.create import CreateInferenceRequest, CreateInferenceResponse
-from app.models.inference.use import (
-    ApplicationContent,
-    UseInferenceRequest,
-    UseInferenceResponse,
-)
-from app.models.message.create import CreateMessage, CreateRequest, CreateResponse
+from app.models.inference.create import (CreateInferenceRequest,
+                                         CreateInferenceResponse)
+from app.models.inference.use import (ApplicationContent, UseInferenceRequest,
+                                      UseInferenceResponse)
+from app.models.message.create import (CreateMessage, CreateRequest,
+                                       CreateResponse)
 from app.models.message.reverse import ReverseActionWrapper
 from app.models.message.shared import Role
 from app.models.message.use import UseMessage, UseRequest, UseResponse

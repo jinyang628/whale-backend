@@ -8,10 +8,8 @@ from pydantic import ValidationError
 from app.exceptions.exception import DatabaseError
 from app.models.application.base import ApplicationContent
 from app.models.application.build import PostApplicationResponse
-from app.models.application.select import (
-    SelectApplicationRequest,
-    SelectApplicationResponse,
-)
+from app.models.application.select import (SelectApplicationRequest,
+                                           SelectApplicationResponse)
 from app.models.application.validate import ValidateResponse
 from app.services.application import ApplicationService
 

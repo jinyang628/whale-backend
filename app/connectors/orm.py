@@ -304,11 +304,12 @@ class Orm:
                 query = select(orm_model)
                 filter_expression, params = _build_filter(orm_model, filters)
                 query = query.filter(filter_expression)
-
                 query = query.limit(batch_size).offset(offset)
+                print("QUERY BUILT")
                 batch_results = await session.execute(query, params)
+                print("BATCH EXECUTED")
                 batch_results = batch_results.scalars().all()
-
+                print(batch_results)
                 if not batch_results:
                     break
 
@@ -318,6 +319,8 @@ class Orm:
 
         if not results:
             return []
+        print("RESULTS")
+        print(results)
         return [pydantic_model.model_validate(result.__dict__) for result in results]
 
     async def static_post(

@@ -166,7 +166,7 @@ class MessageService:
         clarification: Optional[str],
         concluding_message: Optional[str],
         application_content: ApplicationContent,
-        user_id: str,
+        user_id: Optional[str],
         all_application_names: list[str],
     ) -> CreateResponse:
         is_finished = False
@@ -180,16 +180,20 @@ class MessageService:
                 application_content=application_content
             )
             all_application_names.append(application_content.name)
-            await self.user_service.update(
-                filters={
-                    "boolean_clause": "AND",
-                    "conditions": [
-                        {"column": "id", "operator": "=", "value": user_id}
-                    ],
-                },
-                updated_data={"applications": all_application_names},
-                increment_field=None,
-            )
+            
+            # only update cache if user is signed in
+            if user_id:
+                await self.user_service.update(
+                    filters={
+                        "boolean_clause": "AND",
+                        "conditions": [
+                            {"column": "id", "operator": "=", "value": user_id}
+                        ],
+                    },
+                    updated_data={"applications": all_application_names},
+                    increment_field=None,
+                )
+                
             is_finished = True
         elif overview:
             message_content = (

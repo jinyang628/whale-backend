@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from pydantic import BaseModel
 from sqlalchemy import UUID, Column, DateTime, Integer, String
@@ -19,7 +20,7 @@ class FeedbackORM(Base):
     __tablename__ = "feedback"
 
     id = Column(UUID(as_uuid=True), primary_key=True)
-    user_id = Column(String, nullable=False)
+    user_id = Column(String, nullable=True)
     name = Column(String, nullable=False)
     email = Column(String, nullable=False)
     feedback = Column(String, nullable=False)
@@ -30,13 +31,13 @@ class FeedbackORM(Base):
 
 
 class Feedback(BaseObject):
-    user_id: str
+    user_id: Optional[str]
     name: str
     email: str
     feedback: str
 
     @classmethod
-    def local(cls, user_id: str, name: str, email: str, feedback: str):
+    def local(cls, user_id: Optional[str], name: str, email: str, feedback: str):
         return Feedback(
             id=Feedback.generate_id(),
             user_id=user_id,

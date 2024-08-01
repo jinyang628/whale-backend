@@ -13,7 +13,7 @@ class CreateMessage(Message):
 class CreateRequest(BaseModel):
     message: str
     chat_history: list[CreateMessage]
-    user_id: str
+    user_id: Optional[str]
     all_application_names: list[str]
 
 

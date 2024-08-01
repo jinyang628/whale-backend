@@ -26,7 +26,7 @@ class UserService:
                 raise ValueError(f"User of id {user_id} not found.")
             # User email is only sent during initial fetch at login
             result = await self.post(
-                users=[User(id=user_id, email=user_email, applications=[], visits=0)]
+                users=[User.local(id=user_id, email=user_email, applications=[], visits=0, total_calls=0)]
             )
         elif len(result) > 1:
             raise ValueError(f"Multiple users found for id {user_id}")

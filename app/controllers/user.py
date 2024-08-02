@@ -27,6 +27,7 @@ class UserController:
 
         @router.patch("/cache/update")
         async def update_cache(input: UpdateCacheRequest) -> JSONResponse:
+            print(input)
             try:
                 await self.service.update(
                     filters={

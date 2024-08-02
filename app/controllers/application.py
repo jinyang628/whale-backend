@@ -91,9 +91,13 @@ class ApplicationController:
                         status_code=404, detail="Application not found"
                     )
                 input.all_application_names.append(input.new_application_name)
-                await self.service.insert_cache(
-                    names=input.all_application_names, user_id=input.user_id
-                )
+                
+                # Only insert into cache if user is logged in
+                if input.user_id:
+                    await self.service.insert_cache(
+                        names=input.all_application_names, user_id=input.user_id
+                    )
+                    
                 return JSONResponse(status_code=200, content=response.model_dump())
             except DatabaseError as e:
                 log.error("Database error: %s", str(e))

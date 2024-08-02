@@ -15,7 +15,7 @@ class UseRequest(BaseModel):
     chat_history: list[UseMessage]
     reverse_stack: list[ReverseActionWrapper]
     application_names: list[str]
-    user_id: str
+    user_id: Optional[str]
 
 
 class UseResponse(BaseModel):

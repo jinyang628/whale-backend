@@ -81,7 +81,7 @@ class MessageService:
         chat_history: list[UseMessage],
         reverse_stack: list[ReverseActionWrapper],
         inference_response: UseInferenceResponse,
-        user_id: str,
+        user_id: Optional[str],
     ) -> UseResponse:
         if inference_response.clarification:
             response_message_lst = [
@@ -106,16 +106,16 @@ class MessageService:
         chat_history.append(user_message)
         chat_history.extend(response_message_lst)
 
-        # TODO: Aaron to update USER table with UserService UPDATE function, leaving updated_data NONE and increment_field set to total_calls
-
-        await self.user_service.update(
-            filters={
-                "boolean_clause": "AND",
-                "conditions": [{"column": "id", "operator": "=", "value": user_id}],
-            },
-            updated_data=None,
-            increment_field="total_calls",
-        )
+        # only initiate cache update if user is signed in
+        if user_id:
+            await self.user_service.update(
+                filters={
+                    "boolean_clause": "AND",
+                    "conditions": [{"column": "id", "operator": "=", "value": user_id}],
+                },
+                updated_data=None,
+                increment_field="total_calls",
+            )
 
         return UseResponse(
             message_lst=response_message_lst,
